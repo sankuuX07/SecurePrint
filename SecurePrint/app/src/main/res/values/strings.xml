@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">SecurePrint</string>
+    <string name="tagline">Your Documents.\nYour Privacy.</string>
+    <string name="description">Print securely at nearby Xerox shops without sending your documents on WhatsApp.</string>
+    <string name="get_started">Get Started</string>
+    <string name="encrypted">Encrypted</string>
+    <string name="temporary_access">Temporary Access</string>
+    <string name="auto_expiry">Auto Expiry</string>
+
+    <!-- Role Selection -->
+    <string name="choose_role">Choose your role</string>
+    <string name="customer">Customer</string>
+    <string name="customer_desc">Print your documents securely</string>
+    <string name="xerox_shop">Xerox Shop</string>
+    <string name="xerox_shop_desc">Manage print jobs and customers</string>
+    <string name="admin">Admin</string>
+    <string name="admin_desc">Manage the SecurePrint platform</string>
+
+    <!-- Login Placeholders -->
+    <string name="customer_login">Customer Login</string>
+    <string name="shop_login">Xerox Shop Login</string>
+    <string name="admin_login">Admin Login</string>
+</resources>
