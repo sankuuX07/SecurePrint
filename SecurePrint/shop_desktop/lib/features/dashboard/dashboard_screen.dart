@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/config/app_config.dart';
 import '../../core/networking/api_client.dart';
+import '../../providers/auth_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -72,7 +74,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildInfoCard(
             title: "Authentication",
             children: [
-              _buildInfoRow("Status:", "Not authenticated"),
+              _buildInfoRow("Status:", "Authenticated"),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  context.read<AuthProvider>().logout();
+                },
+                icon: const Icon(Icons.logout),
+                label: const Text('Logout'),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+              ),
             ],
           ),
         ],

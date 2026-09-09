@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'widgets/app_shell.dart';
+import 'features/auth/login_screen.dart';
+import 'providers/auth_provider.dart';
 
 void main() {
-  runApp(const SecurePrintShopApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const SecurePrintShopApp(),
+    ),
+  );
 }
 
 class SecurePrintShopApp extends StatelessWidget {
@@ -16,7 +26,19 @@ class SecurePrintShopApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const AppShell(),
+      home: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          if (auth.state == AuthState.uninitialized) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (auth.isAuthenticated) {
+            return const AppShell();
+          }
+          return const LoginScreen();
+        },
+      ),
       debugShowCheckedModeBanner: false,
     );
   }
