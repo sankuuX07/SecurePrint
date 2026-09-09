@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import 'widgets/app_shell.dart';
 import 'features/auth/login_screen.dart';
 import 'providers/auth_provider.dart';
+import 'providers/dashboard_provider.dart';
 
 void main() {
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
       ],
       child: const SecurePrintShopApp(),
     ),

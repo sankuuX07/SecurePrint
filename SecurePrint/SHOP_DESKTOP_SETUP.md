@@ -84,7 +84,15 @@ On application startup, the application checks the secure storage for an existin
 ### Logout
 Logging out removes the authentication session from local secure storage and returns the user to the Login screen. 
 
-## 9. Troubleshooting
+## 9. Dashboard (M3)
+The Windows Shop Dashboard connects to the FastAPI backend to display real-time shop data:
+- **Shop Profile**: Displays shop information fetched from `/api/v1/users/me`.
+- **Job Statistics**: Computes statistics for Pending, Accepted, Printing, Completed, and Cancelled jobs. To avoid fabricating non-existent backend APIs, these statistics are derived from the most recent fetched page of jobs.
+- **Recent Jobs**: Displays a real-time table of recent print jobs fetched from `/api/v1/print-jobs/shop`.
+- **Refresh**: The dashboard includes a manual refresh button to fetch the latest data from the server.
+- **Security**: The dashboard respects backend-enforced roles and automatically redirects to the Login screen if the session expires (401 Unauthorized).
+
+## 10. Troubleshooting
 ### Common Login Errors
 * **Invalid credentials**: Make sure the email and password are correct.
 * **Account unauthorized**: Indicates that the account is not a Shop, is pending approval, or is rejected. Ensure you are logging in with an active Shop account.
@@ -96,7 +104,8 @@ If the application cannot connect to the backend:
 2. Verify that the configured `backendUrl` in `shop_desktop/lib/core/config/app_config.dart` matches the address where your backend is hosted (e.g., `http://127.0.0.1:8000`).
 3. For LAN testing, change `currentEnvironment` to `Environment.lanTesting` and update the IP address appropriately. Ensure the backend is bound to `0.0.0.0` to accept external network traffic.
 
-## 10. Current M2 Limitations
-*   Print Jobs, Documents, Printing, History, and Settings navigation tabs show placeholder screens.
-*   The Dashboard displays static application info and doesn't load real API metrics yet.
+## 11. Current M3 Limitations
+*   Accepting, Rejecting, and Cancelling jobs is not yet implemented.
+*   Document downloading and printing are not yet implemented.
+*   Secure Access QR is not yet implemented.
 *   No final installer (`setup.exe`) is created yet.
