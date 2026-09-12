@@ -92,7 +92,16 @@ The Windows Shop Dashboard connects to the FastAPI backend to display real-time 
 - **Refresh**: The dashboard includes a manual refresh button to fetch the latest data from the server.
 - **Security**: The dashboard respects backend-enforced roles and automatically redirects to the Login screen if the session expires (401 Unauthorized).
 
-## 10. Troubleshooting
+## 10. Print Jobs Screen (M4)
+The Windows Shop application features a dedicated Print Jobs screen to list incoming and existing jobs:
+- **Incoming Jobs**: Lists all print jobs associated with the authenticated Shop.
+- **Filtering**: Shops can filter print jobs by their status (`CREATED`, `SENT_TO_SHOP`, `ACCEPTED`, `PRINTING`, `COMPLETED`, `CANCELLED`).
+- **Data Display**: Shows `Job ID`, `Date`, `Copies`, `Paper Size`, `Color Mode`, `Print Side`, `Price`, and `Status`. 
+- **Pagination**: Supports server-side pagination to efficiently fetch large lists of jobs.
+- **Refresh**: Includes a manual refresh action to update the job list.
+- **Security**: Ensures jobs can only be viewed by the authenticated Shop that owns them. Backend prevents unauthorized access and cross-shop data leaks. No sensitive documents or credentials are computationally exposed.
+
+## 11. Troubleshooting
 ### Common Login Errors
 * **Invalid credentials**: Make sure the email and password are correct.
 * **Account unauthorized**: Indicates that the account is not a Shop, is pending approval, or is rejected. Ensure you are logging in with an active Shop account.
@@ -104,8 +113,8 @@ If the application cannot connect to the backend:
 2. Verify that the configured `backendUrl` in `shop_desktop/lib/core/config/app_config.dart` matches the address where your backend is hosted (e.g., `http://127.0.0.1:8000`).
 3. For LAN testing, change `currentEnvironment` to `Environment.lanTesting` and update the IP address appropriately. Ensure the backend is bound to `0.0.0.0` to accept external network traffic.
 
-## 11. Current M3 Limitations
-*   Accepting, Rejecting, and Cancelling jobs is not yet implemented.
+## 12. Current Limitations (M4 Complete)
+*   Accepting, Rejecting, and Cancelling jobs is not yet implemented (Reserved for M5).
 *   Document downloading and printing are not yet implemented.
 *   Secure Access QR is not yet implemented.
 *   No final installer (`setup.exe`) is created yet.

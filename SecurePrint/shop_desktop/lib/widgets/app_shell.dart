@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../features/dashboard/dashboard_screen.dart';
+import '../features/print_jobs/print_jobs_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({Key? key}) : super(key: key);
@@ -13,7 +14,7 @@ class _AppShellState extends State<AppShell> {
 
   final List<Widget> _screens = [
     const DashboardScreen(),
-    const Center(child: Text('Print Jobs Placeholder')),
+    const PrintJobsScreen(),
     const Center(child: Text('Documents Placeholder')),
     const Center(child: Text('Printing Placeholder')),
     const Center(child: Text('History Placeholder')),
