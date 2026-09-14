@@ -1,6 +1,9 @@
 import '../core/networking/api_client.dart';
 import '../models/user_model.dart';
 import '../models/print_job_model.dart';
+import '../models/print_job_detail_model.dart';
+import '../models/payment_model.dart';
+
 
 class ShopService {
   final ApiClient _apiClient;
@@ -22,5 +25,30 @@ class ShopService {
       return response.map((json) => PrintJobModel.fromJson(json)).toList();
     }
     return [];
+  }
+
+  Future<PrintJobDetailModel> getPrintJobDetail(int jobId) async {
+    final response = await _apiClient.get('/api/v1/print-jobs/shop/$jobId');
+    return PrintJobDetailModel.fromJson(response);
+  }
+
+  Future<PaymentModel> getJobPayment(int jobId) async {
+    final response = await _apiClient.get('/api/v1/payment/$jobId/payment');
+    return PaymentModel.fromJson(response);
+  }
+
+  Future<PrintJobModel> acceptJob(int jobId) async {
+    final response = await _apiClient.post('/api/v1/print-jobs/$jobId/accept');
+    return PrintJobModel.fromJson(response);
+  }
+
+  Future<PrintJobModel> startJob(int jobId) async {
+    final response = await _apiClient.post('/api/v1/print-jobs/$jobId/start');
+    return PrintJobModel.fromJson(response);
+  }
+
+  Future<PrintJobModel> completeJob(int jobId) async {
+    final response = await _apiClient.post('/api/v1/print-jobs/$jobId/complete');
+    return PrintJobModel.fromJson(response);
   }
 }

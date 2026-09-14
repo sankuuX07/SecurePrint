@@ -31,6 +31,25 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> post(String endpoint, {Map<String, dynamic>? body}) async {
+    final url = Uri.parse('${AppConfig.backendUrl}$endpoint');
+    
+    try {
+      final headers = await _buildHeaders();
+      final response = await _client.post(
+        url,
+        headers: headers,
+        body: body != null ? json.encode(body) : null,
+      ).timeout(timeout);
+
+      return _processResponse(response);
+    } on ApiException {
+      rethrow;
+    } on Exception catch (e) {
+      throw ApiException('Network error or timeout: $e');
+    }
+  }
+
   Future<Map<String, String>> _buildHeaders() async {
     final token = await _secureStorage.getToken();
     final headers = {

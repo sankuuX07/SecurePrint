@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/print_jobs_provider.dart';
 import '../../models/print_job_model.dart';
+import 'job_details_screen.dart';
 
 class PrintJobsScreen extends StatefulWidget {
   const PrintJobsScreen({Key? key}) : super(key: key);
@@ -160,7 +161,20 @@ class _PrintJobsScreenState extends State<PrintJobsScreen> {
 
     return InkWell(
       onTap: () {
-        // Will be implemented in M5 (Job Details)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => JobDetailsScreen(
+              jobId: job.id,
+              onBack: () => Navigator.pop(context),
+            ),
+          ),
+        ).then((_) {
+          // Refresh list when returning
+          if (context.mounted) {
+            context.read<PrintJobsProvider>().refresh();
+          }
+        });
       },
       child: Padding(
         padding: const EdgeInsets.all(16.0),
