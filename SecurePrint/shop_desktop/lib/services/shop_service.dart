@@ -51,4 +51,12 @@ class ShopService {
     final response = await _apiClient.post('/api/v1/print-jobs/$jobId/complete');
     return PrintJobModel.fromJson(response);
   }
+
+  Future<Map<String, dynamic>> authorizeDocumentAccess(String token) async {
+    final response = await _apiClient.post(
+      '/api/v1/shop/document-access/authorize',
+      body: {'token': token},
+    );
+    return response as Map<String, dynamic>;
+  }
 }

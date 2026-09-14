@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/job_detail_provider.dart';
 import '../../models/print_job_detail_model.dart';
 import '../../models/payment_model.dart';
+import 'secure_qr_scanner_screen.dart';
 
 class JobDetailsScreen extends StatelessWidget {
   final int jobId;
@@ -180,6 +181,22 @@ class _JobDetailsContent extends StatelessWidget {
                           label: const Text('Complete Job'),
                           style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                         ),
+                      if (job.status == 'ACCEPTED' || job.status == 'PRINTING') ...[
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SecureQrScannerScreen(jobId: job.id),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: const Text('Scan QR'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                        ),
+                      ],
                     ],
                   ),
                 ],
