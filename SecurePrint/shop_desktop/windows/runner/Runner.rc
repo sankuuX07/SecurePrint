@@ -89,12 +89,12 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
+            VALUE "CompanyName", "SecurePrint" "\0"
             VALUE "FileDescription", "SecurePrint Shop" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "secureprint_shop" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "secureprint_shop.exe" "\0"
+            VALUE "InternalName", "SecurePrint-Shop" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 SecurePrint. All rights reserved." "\0"
+            VALUE "OriginalFilename", "SecurePrint-Shop.exe" "\0"
             VALUE "ProductName", "SecurePrint Shop" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

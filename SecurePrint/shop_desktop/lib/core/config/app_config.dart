@@ -8,9 +8,9 @@ class AppConfig {
   static const String version = "1.0.0";
   
   // These will be initialized by SettingsProvider on startup
-  static Environment currentEnvironment = Environment.development;
+  static Environment currentEnvironment = Environment.production;
   static String? customBackendUrl;
-  static bool enableDetailedLogging = true;
+  static bool enableDetailedLogging = false;
 
   static String get backendUrl {
     if (customBackendUrl != null && customBackendUrl!.isNotEmpty) {
@@ -23,7 +23,7 @@ class AppConfig {
       case Environment.lanTesting:
         return "http://192.168.1.100:8000";
       case Environment.production:
-        return "https://api.secureprint.example.com";
+        return "https://api.secureprint.com";
     }
   }
 
