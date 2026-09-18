@@ -117,6 +117,7 @@ The application includes a Secure QR Scanner to authenticate customer presence a
 - **Authorized Document Retrieval**: The Windows client requests the secure document via `/api/v1/shop/document-access/{access_id}/download` using the authenticated Shop session.
 - **Temporary Storage**: The downloaded PDF is stored in a secure, temporary local working directory.
 - **Document Preview (M8)**: Automatically launches `DocumentPreviewScreen` using `syncfusion_flutter_pdfviewer` to safely render the PDF. The temporary file is released when the preview is closed.
+- **Windows Printer Selection (M9)**: Uses the `printing` package to natively discover Windows printers. Highlights the default printer and persists the shop's preferred printer across sessions using SecureStorage. Validates printer availability before printing.
 - **Error Handling**: Handles scenarios like expired tokens, revoked access, wrong Shop, corrupted downloads, or missing documents.
 - **Cleanup**: Temporary files are deleted when no longer needed via `DocumentAccessProvider`. No permanent public document URL or file path is exposed.
 
@@ -132,6 +133,6 @@ If the application cannot connect to the backend:
 2. Verify that the configured `backendUrl` in `shop_desktop/lib/core/config/app_config.dart` matches the address where your backend is hosted (e.g., `http://127.0.0.1:8000`).
 3. For LAN testing, change `currentEnvironment` to `Environment.lanTesting` and update the IP address appropriately. Ensure the backend is bound to `0.0.0.0` to accept external network traffic.
 
-## 14. Current Limitations (M8 Complete)
-*   Document printing is not yet implemented (Reserved for M9).
+## 14. Current Limitations (M9 Complete)
+*   Actual Print Spooling/Execution (M10) is not yet implemented (Shows a placeholder dialog).
 *   No final installer (`setup.exe`) is created yet.

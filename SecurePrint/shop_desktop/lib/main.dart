@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/print_jobs_provider.dart';
 import 'providers/document_access_provider.dart';
+import 'providers/printer_provider.dart';
 
 void main() {
   runApp(
@@ -15,6 +16,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => PrintJobsProvider()),
         ChangeNotifierProvider(create: (_) => DocumentAccessProvider()),
+        ChangeNotifierProvider(create: (_) => PrinterProvider()),
       ],
       child: const SecurePrintShopApp(),
     ),

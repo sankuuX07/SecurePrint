@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../models/print_job_detail_model.dart';
 import '../../providers/document_access_provider.dart';
+import '../print_jobs/printer_selection_screen.dart';
 import 'package:provider/provider.dart';
 
 class DocumentPreviewScreen extends StatefulWidget {
@@ -99,8 +100,14 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Printing functionality will be available in M9.')),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PrinterSelectionScreen(
+                              job: widget.job,
+                              localFilePath: widget.localFilePath,
+                            ),
+                          ),
                         );
                       },
                       icon: const Icon(Icons.print),
