@@ -30,7 +30,6 @@ void main() {
               'amount': 10.0,
               'method': 'PAY_AT_SHOP',
               'status': 'UNPAID',
-              'created_at': '2023-01-01T12:00:00Z'
             }),
             200,
           );
@@ -111,7 +110,6 @@ void main() {
               'amount': 10.0,
               'method': 'PAY_AT_SHOP',
               'status': 'UNPAID',
-              'created_at': '2023-01-01T12:00:00Z'
             }),
             200,
           );
@@ -145,6 +143,63 @@ void main() {
       
       expect(acceptCalled, true);
       expect(provider.jobDetail?.status, 'ACCEPTED');
+    });
+    test('Mark payment paid updates status', () async {
+      bool markPaidCalled = false;
+      final client = MockClient((request) async {
+        if (request.method == 'POST' && request.url.path.contains('mark-paid')) {
+          markPaidCalled = true;
+          return http.Response(
+            jsonEncode({
+              'id': 1,
+              'print_job_id': 1,
+              'amount': 10.0,
+              'method': 'PAY_AT_SHOP',
+              'status': 'PAID',
+              'paid_at': '2023-01-01T12:05:00Z'
+            }),
+            200,
+          );
+        } else if (request.url.path.contains('/payment')) {
+          return http.Response(
+            jsonEncode({
+              'id': 1,
+              'print_job_id': 1,
+              'amount': 10.0,
+              'method': 'PAY_AT_SHOP',
+              'status': markPaidCalled ? 'PAID' : 'UNPAID',
+            }),
+            200,
+          );
+        } else {
+          return http.Response(
+            jsonEncode({
+              'id': 1,
+              'status': 'CREATED',
+              'price': 10.0,
+              'copies': 1,
+              'paper_size': 'A4',
+              'color_mode': 'BW',
+              'print_side': 'SINGLE',
+              'document_id': 'doc1',
+              'status_history': []
+            }),
+            200,
+          );
+        }
+      });
+
+      final apiClient = ApiClient(client: client, secureStorage: mockStorage);
+      final shopService = ShopService(apiClient: apiClient);
+      final provider = JobDetailProvider(jobId: 1, shopService: shopService);
+
+      await provider.loadJob();
+      expect(provider.payment?.status, 'UNPAID');
+
+      await provider.markPaymentPaid();
+      
+      expect(markPaidCalled, true);
+      expect(provider.payment?.status, 'PAID');
     });
   });
 }

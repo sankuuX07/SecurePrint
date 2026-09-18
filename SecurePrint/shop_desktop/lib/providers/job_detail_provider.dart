@@ -77,6 +77,10 @@ class JobDetailProvider extends ChangeNotifier {
     await _performAction(() => _shopService.completeJob(jobId));
   }
 
+  Future<void> markPaymentPaid() async {
+    await _performAction(() => _shopService.markPaymentPaid(jobId));
+  }
+
   Future<void> _performAction(Future<dynamic> Function() action) async {
     if (_isActionProcessing) return;
     

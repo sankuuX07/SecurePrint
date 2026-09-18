@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/print_jobs/print_jobs_screen.dart';
+import '../features/history/history_screen.dart';
+import '../features/shop_profile/shop_profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({Key? key}) : super(key: key);
@@ -17,8 +19,8 @@ class _AppShellState extends State<AppShell> {
     const PrintJobsScreen(),
     const Center(child: Text('Documents Placeholder')),
     const Center(child: Text('Printing Placeholder')),
-    const Center(child: Text('History Placeholder')),
-    const Center(child: Text('Settings Placeholder')),
+    const HistoryScreen(),
+    const ShopProfileScreen(),
   ];
 
   @override
@@ -65,9 +67,9 @@ class _AppShellState extends State<AppShell> {
                 label: Text('History'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
-                label: Text('Settings'),
+                icon: Icon(Icons.store_outlined),
+                selectedIcon: Icon(Icons.store),
+                label: Text('Shop Profile'),
               ),
             ],
           ),

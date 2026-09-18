@@ -3,6 +3,7 @@ import '../models/user_model.dart';
 import '../models/print_job_model.dart';
 import '../models/print_job_detail_model.dart';
 import '../models/payment_model.dart';
+import '../models/shop_qr_model.dart';
 
 
 class ShopService {
@@ -33,7 +34,12 @@ class ShopService {
   }
 
   Future<PaymentModel> getJobPayment(int jobId) async {
-    final response = await _apiClient.get('/api/v1/payment/$jobId/payment');
+    final response = await _apiClient.get('/api/v1/shop/print-jobs/$jobId/payment');
+    return PaymentModel.fromJson(response);
+  }
+
+  Future<PaymentModel> markPaymentPaid(int jobId) async {
+    final response = await _apiClient.post('/api/v1/shop/print-jobs/$jobId/payment/mark-paid');
     return PaymentModel.fromJson(response);
   }
 
@@ -58,5 +64,15 @@ class ShopService {
       body: {'token': token},
     );
     return response as Map<String, dynamic>;
+  }
+
+  Future<ShopQrModel> getShopQr() async {
+    final response = await _apiClient.get('/api/v1/shop/qr');
+    return ShopQrModel.fromJson(response);
+  }
+
+  Future<ShopQrModel> regenerateShopQr() async {
+    final response = await _apiClient.post('/api/v1/shop/qr/regenerate');
+    return ShopQrModel.fromJson(response);
   }
 }

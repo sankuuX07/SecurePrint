@@ -43,6 +43,7 @@ dependencies:
   path: ^1.9.1
   syncfusion_flutter_pdfviewer: ^34.2.8
   printing: ^5.15.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

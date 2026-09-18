@@ -73,6 +73,29 @@ class _JobDetailsContent extends StatelessWidget {
     );
   }
 
+  void _handleMarkPaid(BuildContext context, JobDetailProvider provider, double amount) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Payment'),
+        content: Text('Confirm that the customer has paid ₹${amount.toStringAsFixed(2)} at the shop?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              provider.markPaymentPaid();
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<JobDetailProvider>();
@@ -212,10 +235,24 @@ class _JobDetailsContent extends StatelessWidget {
                     const Divider(),
                     _InfoRow('Document ID:', job.documentId),
                     _InfoRow('Created:', _formatDate(job.createdAt)),
-                    _InfoRow('Price:', '\$${job.price.toStringAsFixed(2)}'),
+                    _InfoRow('Price:', '₹${job.price.toStringAsFixed(2)}'),
                     if (payment != null) ...[
                       _InfoRow('Payment Method:', payment.method),
                       _InfoRow('Payment Status:', payment.status),
+                      if (payment.paidAt != null)
+                        _InfoRow('Paid At:', _formatDate(payment.paidAt)),
+                      if (payment.method == 'PAY_AT_SHOP' && payment.status == 'UNPAID')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16.0),
+                          child: ElevatedButton.icon(
+                            onPressed: provider.isActionProcessing
+                                ? null
+                                : () => _handleMarkPaid(context, provider, payment.amount),
+                            icon: const Icon(Icons.payments),
+                            label: const Text('Mark as Paid'),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                          ),
+                        ),
                     ],
                   ],
                 ),

@@ -119,6 +119,8 @@ The application includes a Secure QR Scanner to authenticate customer presence a
 - **Document Preview (M8)**: Automatically launches `DocumentPreviewScreen` using `syncfusion_flutter_pdfviewer` to safely render the PDF. The temporary file is released when the preview is closed.
 - **Windows Printer Selection (M9)**: Uses the `printing` package to natively discover Windows printers. Highlights the default printer and persists the shop's preferred printer across sessions using SecureStorage. Validates printer availability before printing.
 - **Actual Printing & Spooling (M10)**: Sends the authorized document directly to the Windows Spooler. Supports multi-copy jobs via sequential spooling. Implements robust status synchronization to the backend (`PRINTING -> COMPLETED`) and locking to prevent accidental double prints.
+- **History & Payments (M11)**: View paginated history of shop jobs, along with a detailed status timeline per job. Securely mark `PAY_AT_SHOP` jobs as Paid locally.
+- **Shop Identity QR (M11)**: Dedicated profile tab separating the Shop Identification QR natively from the Secure Document Access QR scanner.
 - **Error Handling**: Handles scenarios like expired tokens, revoked access, wrong Shop, corrupted downloads, missing documents, or backend synchronization network failures.
 - **Cleanup**: Temporary files are rigorously wiped when the print execution completes, the dialogue is dismissed, or the M8 preview closes. No permanent public document URL or file path is exposed.
 
@@ -134,6 +136,6 @@ If the application cannot connect to the backend:
 2. Verify that the configured `backendUrl` in `shop_desktop/lib/core/config/app_config.dart` matches the address where your backend is hosted (e.g., `http://127.0.0.1:8000`).
 3. For LAN testing, change `currentEnvironment` to `Environment.lanTesting` and update the IP address appropriately. Ensure the backend is bound to `0.0.0.0` to accept external network traffic.
 
-## 14. Current Limitations (M10 Complete)
-*   No final installer (`setup.exe`) is created yet.
+## 14. Current Limitations (M11 Complete)
+*   No final installer (`setup.exe`) is created yet (Planned for M12).
 *   Backend tests cannot be run natively due to python environment configuration.
