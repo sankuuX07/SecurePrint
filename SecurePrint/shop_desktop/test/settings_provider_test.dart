@@ -38,7 +38,8 @@ void main() {
       await provider.init();
       expect(provider.isInitialized, true);
       // Fallback defaults
-      expect(AppConfig.currentEnvironment, Environment.development);
+      expect(AppConfig.currentEnvironment, Environment.production);
+      expect(AppConfig.enableDetailedLogging, isFalse);
       expect(AppConfig.customBackendUrl, isNull);
     });
 
