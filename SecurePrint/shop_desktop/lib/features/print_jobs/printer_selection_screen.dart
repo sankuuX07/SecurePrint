@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:printing/printing.dart';
 import '../../models/print_job_detail_model.dart';
 import '../../providers/printer_provider.dart';
+import 'print_execution_dialog.dart';
 
 class PrinterSelectionScreen extends StatefulWidget {
   final PrintJobDetailModel job;
@@ -124,16 +125,31 @@ class _PrinterSelectionScreenState extends State<PrinterSelectionScreen> {
                         return;
                       }
 
-                      // M10 Placeholder
                       showDialog(
                         context: context,
+                        barrierDismissible: false,
                         builder: (context) => AlertDialog(
-                          title: const Text('Ready to Print'),
-                          content: Text('M10 Placeholder:\n\nDocument authorized and printer "${provider.selectedPrinter!.name}" is selected. Actual printing will execute in M10.'),
+                          title: const Text('Ready to Print?'),
+                          content: Text('Are you sure you want to print ${widget.job.copies} copies to "${provider.selectedPrinter!.name}"?\n\nPaper Size: ${widget.job.paperSize}\nColor Mode: ${widget.job.colorMode}'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text('OK'),
+                              child: const Text('Cancel'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Close confirmation
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => PrintExecutionDialog(
+                                    job: widget.job,
+                                    printer: provider.selectedPrinter!,
+                                    localFilePath: widget.localFilePath,
+                                  ),
+                                );
+                              },
+                              child: const Text('Print'),
                             )
                           ],
                         )
@@ -142,7 +158,7 @@ class _PrinterSelectionScreenState extends State<PrinterSelectionScreen> {
                     icon: const Icon(Icons.send),
                     label: const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text('Proceed to Print (M10)', style: TextStyle(fontSize: 18)),
+                      child: Text('Proceed to Print', style: TextStyle(fontSize: 18)),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
