@@ -188,7 +188,7 @@ class _JobDetailsContent extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => SecureQrScannerScreen(jobId: job.id),
+                                builder: (context) => SecureQrScannerScreen(job: job),
                               ),
                             );
                           },

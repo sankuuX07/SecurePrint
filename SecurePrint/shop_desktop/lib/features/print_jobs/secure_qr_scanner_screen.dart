@@ -4,16 +4,17 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/document_access_provider.dart';
 import '../../models/print_job_detail_model.dart';
+import '../documents/document_preview_screen.dart';
 
 class SecureQrScannerScreen extends StatefulWidget {
-  final int jobId;
+  final PrintJobDetailModel job;
   
-  const SecureQrScannerScreen({Key? key, required this.jobId}) : super(key: key);
+  const SecureQrScannerScreen({Key? key, required this.job}) : super(key: key);
 
   @override
   State<SecureQrScannerScreen> createState() => _SecureQrScannerScreenState();
 }
-
+class _SecureQrScannerScreenState extends State<SecureQrScannerScreen> {
   bool _isScanning = true;
 
   @override
@@ -37,7 +38,7 @@ class SecureQrScannerScreen extends StatefulWidget {
     await provider.authorize(token);
 
     if (provider.state == DocumentAccessState.authorized) {
-      await provider.downloadDocument('document_${widget.jobId}.pdf');
+      await provider.downloadDocument('document_${widget.job.id}.pdf');
     }
   }
 
@@ -102,11 +103,14 @@ class SecureQrScannerScreen extends StatefulWidget {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () {
-                          // M8 placeholder
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Document preview will be available in M8.')),
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => DocumentPreviewScreen(
+                                job: widget.job,
+                                localFilePath: provider.localFilePath!,
+                              ),
+                            ),
                           );
-                          Navigator.of(context).pop();
                         },
                         child: const Text('Open Document'),
                       ),

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/temporary_document_access_model.dart';
 import '../services/shop_service.dart';
 import '../services/document_access_service.dart';
-import '../errors/api_exception.dart';
+import '../core/errors/api_exception.dart';
 
 enum DocumentAccessState {
   notAuthorized,

@@ -41,6 +41,7 @@ dependencies:
   simple_barcode_scanner: ^0.2.2
   path_provider: ^2.1.6
   path: ^1.9.1
+  syncfusion_flutter_pdfviewer: ^34.2.8
 
 dev_dependencies:
   flutter_test:
