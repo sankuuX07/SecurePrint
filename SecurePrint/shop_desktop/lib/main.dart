@@ -9,11 +9,30 @@ import 'providers/document_access_provider.dart';
 import 'providers/printer_provider.dart';
 import 'providers/print_execution_provider.dart';
 import 'providers/shop_qr_provider.dart';
+import 'providers/settings_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'core/utils/logger.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Top-level Error Handling Boundary
+  FlutterError.onError = (FlutterErrorDetails details) {
+    Logger.error('Flutter Framework Error', details.exception, details.stack);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    Logger.error('Uncaught Async Error', error, stack);
+    return true; // Prevent default crash behavior
+  };
+
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.init();
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => PrintJobsProvider()),
@@ -38,6 +57,31 @@ class SecurePrintShopApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
+      builder: (context, child) {
+        ErrorWidget.builder = (FlutterErrorDetails errorDetails) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Something went wrong.",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "The application encountered an unexpected error.\nPlease navigate back or restart.",
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        };
+        return child!;
+      },
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           if (auth.state == AuthState.uninitialized) {

@@ -3,6 +3,7 @@ import '../features/dashboard/dashboard_screen.dart';
 import '../features/print_jobs/print_jobs_screen.dart';
 import '../features/history/history_screen.dart';
 import '../features/shop_profile/shop_profile_screen.dart';
+import '../features/settings/settings_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({Key? key}) : super(key: key);
@@ -21,6 +22,7 @@ class _AppShellState extends State<AppShell> {
     const Center(child: Text('Printing Placeholder')),
     const HistoryScreen(),
     const ShopProfileScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -70,6 +72,11 @@ class _AppShellState extends State<AppShell> {
                 icon: Icon(Icons.store_outlined),
                 selectedIcon: Icon(Icons.store),
                 label: Text('Shop Profile'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings),
+                label: Text('Settings'),
               ),
             ],
           ),

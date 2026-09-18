@@ -26,4 +26,24 @@ class SecureStorage {
   Future<String?> getPreferredPrinter() async {
     return await _storage.read(key: _printerKey);
   }
+
+  // Settings Configuration
+  static const _backendUrlKey = 'secureprint_backend_url';
+  static const _environmentKey = 'secureprint_environment';
+
+  Future<void> saveBackendUrl(String url) async {
+    await _storage.write(key: _backendUrlKey, value: url);
+  }
+
+  Future<String?> getBackendUrl() async {
+    return await _storage.read(key: _backendUrlKey);
+  }
+
+  Future<void> saveEnvironment(String env) async {
+    await _storage.write(key: _environmentKey, value: env);
+  }
+
+  Future<String?> getEnvironment() async {
+    return await _storage.read(key: _environmentKey);
+  }
 }

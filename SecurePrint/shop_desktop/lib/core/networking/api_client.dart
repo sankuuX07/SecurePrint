@@ -27,8 +27,10 @@ class ApiClient {
       return _processResponse(response);
     } on ApiException {
       rethrow;
-    } on Exception catch (e) {
-      throw ApiException('Network error or timeout: $e');
+    } on SocketException catch (_) {
+      throw ApiException('Unable to connect to the SecurePrint server. Please check the backend connection.');
+    } on Exception catch (_) {
+      throw ApiException('Unable to connect to the SecurePrint server. Please check the backend connection.');
     }
   }
 
@@ -46,8 +48,10 @@ class ApiClient {
       return _processResponse(response);
     } on ApiException {
       rethrow;
-    } on Exception catch (e) {
-      throw ApiException('Network error or timeout: $e');
+    } on SocketException catch (_) {
+      throw ApiException('Unable to connect to the SecurePrint server. Please check the backend connection.');
+    } on Exception catch (_) {
+      throw ApiException('Unable to connect to the SecurePrint server. Please check the backend connection.');
     }
   }
 
@@ -82,20 +86,18 @@ class ApiClient {
         await response.stream.pipe(sink);
         await sink.close();
       } else {
-        String errorMessage = 'Failed to download file';
+        String responseBody = '';
         try {
-          final responseBody = await response.stream.bytesToString();
-          final decoded = json.decode(responseBody);
-          if (decoded is Map<String, dynamic> && decoded.containsKey('detail')) {
-            errorMessage = decoded['detail'].toString();
-          }
+          responseBody = await response.stream.bytesToString();
         } catch (_) {}
-        throw ApiException(errorMessage, statusCode: response.statusCode);
+        throw _mapErrorResponse(response.statusCode, responseBody);
       }
     } on ApiException {
       rethrow;
-    } catch (e) {
-      throw ApiException('Network error or timeout: $e');
+    } on SocketException catch (_) {
+      throw ApiException('Unable to connect to the SecurePrint server. Please check the backend connection.');
+    } on Exception catch (_) {
+      throw ApiException('Unable to connect to the SecurePrint server. Please check the backend connection.');
     }
   }
 
@@ -110,16 +112,51 @@ class ApiClient {
       }
       return null;
     } else {
-      String errorMessage = 'Unknown error';
-      try {
-        final decoded = json.decode(response.body);
-        if (decoded is Map<String, dynamic> && decoded.containsKey('detail')) {
-          errorMessage = decoded['detail'].toString();
-        }
-      } catch (_) {
-        errorMessage = response.body;
-      }
-      throw ApiException(errorMessage, statusCode: response.statusCode);
+      throw _mapErrorResponse(response.statusCode, response.body);
     }
+  }
+
+  ApiException _mapErrorResponse(int statusCode, String body) {
+    String? backendDetail;
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map<String, dynamic> && decoded.containsKey('detail')) {
+        backendDetail = decoded['detail'].toString();
+      }
+    } catch (_) {}
+
+    String userMessage;
+    switch (statusCode) {
+      case 401:
+        userMessage = 'Your session has expired. Please log in again.';
+        break;
+      case 403:
+        userMessage = 'You are not authorized to perform this action.';
+        break;
+      case 404:
+        userMessage = 'The requested item could not be found.';
+        break;
+      case 409:
+        userMessage = 'The operation could not be completed because the current state has changed.';
+        break;
+      case 422:
+        userMessage = 'The submitted information is invalid.';
+        break;
+      case 429:
+        userMessage = 'Too many requests. Please try again later.';
+        break;
+      case 500:
+        userMessage = 'SecurePrint server encountered an error.';
+        break;
+      case 502:
+      case 503:
+      case 504:
+        userMessage = 'SecurePrint server is temporarily unavailable.';
+        break;
+      default:
+        userMessage = backendDetail ?? 'An unexpected error occurred.';
+    }
+
+    return ApiException(userMessage, statusCode: statusCode, details: backendDetail);
   }
 }

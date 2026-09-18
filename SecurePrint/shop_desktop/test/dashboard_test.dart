@@ -96,7 +96,7 @@ void main() {
       await provider.loadDashboard();
       
       expect(provider.state, DashboardState.error);
-      expect(provider.errorMessage, contains('Internal Server Error'));
+      expect(provider.errorMessage, contains('SecurePrint server encountered an error.'));
     });
   });
 }
