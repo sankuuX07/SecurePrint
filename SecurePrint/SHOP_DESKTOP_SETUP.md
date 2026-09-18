@@ -101,7 +101,25 @@ The Windows Shop application features a dedicated Print Jobs screen to list inco
 - **Refresh**: Includes a manual refresh action to update the job list.
 - **Security**: Ensures jobs can only be viewed by the authenticated Shop that owns them. Backend prevents unauthorized access and cross-shop data leaks. No sensitive documents or credentials are computationally exposed.
 
-## 11. Troubleshooting
+## 11. Job Actions (M5)
+The Windows Shop application allows Shops to manage the lifecycle of print jobs:
+- **Accept**: Moves a job from `SENT_TO_SHOP` to `ACCEPTED`.
+- **Start Printing**: Moves a job from `ACCEPTED` to `PRINTING`.
+- **Complete**: Moves a job from `PRINTING` to `COMPLETED`.
+- **Cancel**: (Optional/Reserved for future M-modules).
+- **Security**: Actions are securely verified on the backend. Only the assigned Shop can transition job states.
+
+## 12. Secure QR Scanner (M6) & Document Access (M7)
+The application includes a Secure QR Scanner to authenticate customer presence and authorize access to their documents:
+- **QR Scanning**: Opens a webcam scanner to capture the customer's Secure Access Token.
+- **Backend Validation**: The token is sent to the backend (`/api/v1/shop/document-access/authorize`) for validation. The backend ensures the token is valid, unexpired, and matches the Shop and Job.
+- **Temporary Access**: If valid, the backend grants a `TemporaryDocumentAccess` record. The Windows client receives an access identifier but never the direct document storage key.
+- **Authorized Document Retrieval**: The Windows client requests the secure document via `/api/v1/shop/document-access/{access_id}/download` using the authenticated Shop session.
+- **Temporary Storage**: The downloaded PDF is stored in a secure, temporary local working directory.
+- **Error Handling**: Handles scenarios like expired tokens, revoked access, wrong Shop, corrupted downloads, or missing documents.
+- **Cleanup**: Temporary files are deleted when no longer needed. No permanent public document URL or file path is exposed.
+
+## 13. Troubleshooting
 ### Common Login Errors
 * **Invalid credentials**: Make sure the email and password are correct.
 * **Account unauthorized**: Indicates that the account is not a Shop, is pending approval, or is rejected. Ensure you are logging in with an active Shop account.
@@ -113,8 +131,7 @@ If the application cannot connect to the backend:
 2. Verify that the configured `backendUrl` in `shop_desktop/lib/core/config/app_config.dart` matches the address where your backend is hosted (e.g., `http://127.0.0.1:8000`).
 3. For LAN testing, change `currentEnvironment` to `Environment.lanTesting` and update the IP address appropriately. Ensure the backend is bound to `0.0.0.0` to accept external network traffic.
 
-## 12. Current Limitations (M4 Complete)
-*   Accepting, Rejecting, and Cancelling jobs is not yet implemented (Reserved for M5).
-*   Document downloading and printing are not yet implemented.
-*   Secure Access QR is not yet implemented.
+## 14. Current Limitations (M7 Complete)
+*   Document previewing (PDF Viewer) is not yet implemented (Reserved for M8).
+*   Document printing is not yet implemented (Reserved for M9).
 *   No final installer (`setup.exe`) is created yet.

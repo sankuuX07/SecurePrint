@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 import 'package:provider/provider.dart';
-import '../../services/shop_service.dart';
-import '../../core/errors/api_exception.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/document_access_provider.dart';
+import '../../models/print_job_detail_model.dart';
 
 class SecureQrScannerScreen extends StatefulWidget {
   final int jobId;
@@ -14,68 +14,37 @@ class SecureQrScannerScreen extends StatefulWidget {
   State<SecureQrScannerScreen> createState() => _SecureQrScannerScreenState();
 }
 
-class _SecureQrScannerScreenState extends State<SecureQrScannerScreen> {
-  bool _isProcessing = false;
-  String? _statusMessage;
-  bool _isSuccess = false;
-  String? _accessId;
+  bool _isScanning = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DocumentAccessProvider>().reset();
+    });
+  }
 
   Future<void> _handleScan(String? token) async {
     if (token == null || token.isEmpty || token == '-1') {
       return; // Canceled or failed to scan
     }
-    if (_isProcessing || _isSuccess) return; // Debounce
-
+    
     setState(() {
-      _isProcessing = true;
-      _statusMessage = 'Authorizing...';
+      _isScanning = false;
     });
 
-    try {
-      final shopService = Provider.of<ShopService>(context, listen: false);
-      final response = await shopService.authorizeDocumentAccess(token);
-      
-      if (!mounted) return;
-      
-      setState(() {
-        _isProcessing = false;
-        _isSuccess = true;
-        _accessId = response['access_id'];
-        _statusMessage = 'Document access authorized.';
-      });
-      
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      
-      setState(() {
-        _isProcessing = false;
-      });
-      
-      if (e.statusCode == 401) {
-        context.read<AuthProvider>().logout();
-      } else {
-        String msg = 'Authorization failed.';
-        if (e.message.contains('invalid or unavailable')) {
-          msg = 'Invalid or expired Secure Access QR.';
-        } else {
-          msg = e.message;
-        }
-        
-        setState(() {
-          _statusMessage = msg;
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isProcessing = false;
-        _statusMessage = 'An unexpected error occurred.';
-      });
+    final provider = context.read<DocumentAccessProvider>();
+    await provider.authorize(token);
+
+    if (provider.state == DocumentAccessState.authorized) {
+      await provider.downloadDocument('document_${widget.jobId}.pdf');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<DocumentAccessProvider>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scan Secure Print QR'),
@@ -95,7 +64,7 @@ class _SecureQrScannerScreenState extends State<SecureQrScannerScreen> {
             ),
           ),
           
-          if (!_isProcessing && !_isSuccess && _statusMessage == null)
+          if (provider.state == DocumentAccessState.notAuthorized && _isScanning)
             Expanded(
               child: SimpleBarcodeScannerPage(
                 onResult: (result) {
@@ -104,56 +73,64 @@ class _SecureQrScannerScreenState extends State<SecureQrScannerScreen> {
               ),
             ),
             
-          if (_isProcessing || _isSuccess || _statusMessage != null)
+          if (!_isScanning)
             Expanded(
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (_isProcessing) 
+                    if (provider.state == DocumentAccessState.authorizing) ...[
                       const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      const Text('Authorizing...', style: TextStyle(fontSize: 18)),
+                    ],
                     
-                    if (_isSuccess)
+                    if (provider.state == DocumentAccessState.authorized || provider.state == DocumentAccessState.downloading) ...[
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      const Text('Authorized. Downloading document securely...', style: TextStyle(fontSize: 18)),
+                    ],
+
+                    if (provider.state == DocumentAccessState.available) ...[
                       const Icon(Icons.check_circle, color: Colors.green, size: 64),
-                      
-                    if (!_isSuccess && !_isProcessing && _statusMessage != null)
-                      const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                      
-                    const SizedBox(height: 24),
-                    
-                    if (_statusMessage != null)
-                      Text(
-                        _statusMessage!,
-                        style: TextStyle(
-                          fontSize: 18, 
-                          color: _isSuccess ? Colors.green : Colors.red,
-                        ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Document access authorized and ready.',
+                        style: TextStyle(fontSize: 18, color: Colors.green),
                         textAlign: TextAlign.center,
                       ),
-                      
-                    const SizedBox(height: 24),
-                    
-                    if (_isSuccess)
+                      const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () {
-                          // M7 placeholder
+                          // M8 placeholder
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Document access will be available in the next module.')),
+                            const SnackBar(content: Text('Document preview will be available in M8.')),
                           );
                           Navigator.of(context).pop();
                         },
-                        child: const Text('Continue to Document'),
+                        child: const Text('Open Document'),
                       ),
+                    ],
                       
-                    if (!_isSuccess && !_isProcessing)
+                    if (provider.state == DocumentAccessState.failed || provider.state == DocumentAccessState.expired || provider.state == DocumentAccessState.revoked) ...[
+                      const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                      const SizedBox(height: 16),
+                      Text(
+                        provider.errorMessage ?? 'Authorization failed.',
+                        style: const TextStyle(fontSize: 18, color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () {
                           setState(() {
-                            _statusMessage = null;
+                            _isScanning = true;
                           });
+                          provider.reset();
                         },
                         child: const Text('Try Again'),
                       ),
+                    ],
                   ],
                 ),
               ),

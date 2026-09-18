@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../errors/api_exception.dart';
@@ -60,6 +61,42 @@ class ApiClient {
       headers['Authorization'] = 'Bearer $token';
     }
     return headers;
+  }
+
+  Future<void> downloadFile(String endpoint, String savePath) async {
+    final url = Uri.parse('${AppConfig.backendUrl}$endpoint');
+    final token = await _secureStorage.getToken();
+    final headers = <String, String>{};
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    try {
+      final request = http.Request('GET', url);
+      request.headers.addAll(headers);
+      final response = await _client.send(request).timeout(const Duration(minutes: 5));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final file = File(savePath);
+        final sink = file.openWrite();
+        await response.stream.pipe(sink);
+        await sink.close();
+      } else {
+        String errorMessage = 'Failed to download file';
+        try {
+          final responseBody = await response.stream.bytesToString();
+          final decoded = json.decode(responseBody);
+          if (decoded is Map<String, dynamic> && decoded.containsKey('detail')) {
+            errorMessage = decoded['detail'].toString();
+          }
+        } catch (_) {}
+        throw ApiException(errorMessage, statusCode: response.statusCode);
+      }
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Network error or timeout: $e');
+    }
   }
 
   dynamic _processResponse(http.Response response) {
