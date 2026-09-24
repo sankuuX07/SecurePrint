@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="migrated-jars">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/SecurePrint/app/build/intermediates/lint-cache/lintVitalAnalyzeRelease/migrated-jars/androidx.navigation.common.lint.NavigationCommonIssueRegistry-0530810e072e59bd..jar!/" />
+      <root url="jar://$PROJECT_DIR$/SecurePrint/app/build/intermediates/lint-cache/lintVitalAnalyzeRelease/migrated-jars/androidx.navigation.runtime.lint.NavigationRuntimeIssueRegistry-a5eda6577b6977de..jar!/" />
+      <root url="jar://$PROJECT_DIR$/SecurePrint/app/build/intermediates/lint-cache/lintVitalAnalyzeRelease/migrated-jars/androidx.navigation.compose.lint.NavigationComposeIssueRegistry-369477b4e1fbc4b2..jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

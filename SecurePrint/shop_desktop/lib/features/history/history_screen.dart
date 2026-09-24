@@ -134,7 +134,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => JobDetailsScreen(jobId: job.id),
+            builder: (context) => JobDetailsScreen(jobId: job.id, onBack: () => Navigator.pop(context)),
           ),
         );
       },

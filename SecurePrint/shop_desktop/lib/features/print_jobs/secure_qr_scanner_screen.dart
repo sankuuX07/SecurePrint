@@ -67,10 +67,20 @@ class _SecureQrScannerScreenState extends State<SecureQrScannerScreen> {
           
           if (provider.state == DocumentAccessState.notAuthorized && _isScanning)
             Expanded(
-              child: SimpleBarcodeScannerPage(
-                onResult: (result) {
-                  _handleScan(result);
-                },
+              child: Center(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    String? res = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SimpleBarcodeScannerPage(),
+                        ));
+                    if (res != null) {
+                      _handleScan(res);
+                    }
+                  },
+                  child: const Text('Start QR Scanner'),
+                ),
               ),
             ),
             

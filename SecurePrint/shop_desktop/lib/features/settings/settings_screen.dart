@@ -6,6 +6,7 @@ import '../../providers/printer_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../core/config/app_config.dart';
 import '../../services/shop_service.dart';
+import 'package:printing/printing.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -161,16 +162,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _buildSettingRow(
                     'Preferred Printer',
-                    printerProvider.preferredPrinter != null
-                        ? Text(printerProvider.preferredPrinter!, style: const TextStyle(fontWeight: FontWeight.bold))
+                    printerProvider.selectedPrinter != null
+                        ? Text(printerProvider.selectedPrinter!.name, style: const TextStyle(fontWeight: FontWeight.bold))
                         : const Text('None', style: TextStyle(color: Colors.grey)),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.print),
                     label: const Text('Change Printer'),
-                    onPressed: () {
-                      printerProvider.selectPrinter(context);
+                    onPressed: () async {
+                      final printer = await Printing.pickPrinter(context: context);
+                      if (printer != null) {
+                        printerProvider.selectPrinter(printer);
+                      }
                     },
                   ),
                 ],
