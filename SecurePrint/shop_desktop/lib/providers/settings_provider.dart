@@ -14,18 +14,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> init() async {
     final envStr = await _secureStorage.getEnvironment();
     if (envStr != null) {
-      if (envStr == Environment.production.name) {
-        AppConfig.currentEnvironment = Environment.production;
-      } else if (envStr == Environment.lanTesting.name) {
-        AppConfig.currentEnvironment = Environment.lanTesting;
-      } else {
-        AppConfig.currentEnvironment = Environment.development;
-      }
+      AppConfig.currentEnvironment = Environment.development;
     }
 
     final url = await _secureStorage.getBackendUrl();
     if (url != null && url.isNotEmpty) {
-      AppConfig.customBackendUrl = url;
+      AppConfig.customBackendUrl = null;
     }
 
     _isInitialized = true;

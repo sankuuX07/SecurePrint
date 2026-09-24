@@ -8,7 +8,7 @@ class AppConfig {
   static const String version = "1.0.0";
   
   // These will be initialized by SettingsProvider on startup
-  static Environment currentEnvironment = Environment.production;
+  static Environment currentEnvironment = Environment.development;
   static String? customBackendUrl;
   static bool enableDetailedLogging = false;
 
