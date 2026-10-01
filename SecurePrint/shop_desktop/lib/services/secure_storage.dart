@@ -46,4 +46,17 @@ class SecureStorage {
   Future<String?> getEnvironment() async {
     return await _storage.read(key: _environmentKey);
   }
+  
+  // Job Print State Configuration
+  Future<void> saveJobPrintState(int jobId, String state) async {
+    await _storage.write(key: 'secureprint_job_state_$jobId', value: state);
+  }
+
+  Future<String?> getJobPrintState(int jobId) async {
+    return await _storage.read(key: 'secureprint_job_state_$jobId');
+  }
+
+  Future<void> deleteJobPrintState(int jobId) async {
+    await _storage.delete(key: 'secureprint_job_state_$jobId');
+  }
 }

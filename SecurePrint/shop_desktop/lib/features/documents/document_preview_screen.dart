@@ -26,23 +26,21 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
   
   bool _hasError = false;
   String _errorMessage = '';
+  late DocumentAccessProvider _docProvider;
 
   @override
   void initState() {
     super.initState();
     _pdfViewerController = PdfViewerController();
+    _docProvider = context.read<DocumentAccessProvider>();
   }
 
   @override
   void dispose() {
     _pdfViewerController?.dispose();
-    // In M7/M8 we clean up the file when preview is closed to avoid leaving documents behind.
+    // Clean up the file when preview is closed to avoid leaving documents behind.
     // Ensure the DocumentAccessProvider cleans up.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<DocumentAccessProvider>().reset();
-      }
-    });
+    _docProvider.reset();
     super.dispose();
   }
 

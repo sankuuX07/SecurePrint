@@ -5,6 +5,7 @@ import 'package:shop_desktop/models/print_job_detail_model.dart';
 import 'package:shop_desktop/providers/print_execution_provider.dart';
 import 'package:shop_desktop/services/shop_service.dart';
 import 'package:shop_desktop/models/print_job_model.dart';
+import 'package:shop_desktop/services/secure_storage.dart';
 
 class MockShopService extends ShopService {
   bool startCalled = false;
@@ -27,6 +28,25 @@ class MockShopService extends ShopService {
   }
 }
 
+class MockSecureStorage extends SecureStorage {
+  final Map<String, String> _storage = {};
+
+  @override
+  Future<void> saveJobPrintState(int jobId, String state) async {
+    _storage['job_state_$jobId'] = state;
+  }
+
+  @override
+  Future<String?> getJobPrintState(int jobId) async {
+    return _storage['job_state_$jobId'];
+  }
+
+  @override
+  Future<void> deleteJobPrintState(int jobId) async {
+    _storage.remove('job_state_$jobId');
+  }
+}
+
 void main() {
   group('PrintExecutionProvider Tests', () {
     late File tempFile;
@@ -45,31 +65,25 @@ void main() {
 
     test('executePrint completes full lifecycle successfully', () async {
       final service = MockShopService();
-      final provider = PrintExecutionProvider(shopService: service);
+      final storage = MockSecureStorage();
+      final provider = PrintExecutionProvider(shopService: service, secureStorage: storage);
 
       final job = PrintJobDetailModel(id: 1, status: 'ACCEPTED', price: 1.0, copies: 1, paperSize: 'A4', colorMode: 'COLOR', printSide: 'SINGLE', documentId: '1', statusHistory: []);
       final printer = const Printer(name: 'TestPrinter', url: 'url', model: 'model', isDefault: false, isAvailable: true);
 
-      // We don't await because directPrintPdf might require a real platform channel which fails in test.
-      // Wait, we need to mock Printing.directPrintPdf. Actually, in tests, plugin channels return null or throw. 
-      // The printing package uses platform channels. In a unit test without integration, it will throw MissingPluginException.
-      // We will catch it.
-      
       try {
         await provider.executePrint(job, printer, tempFile.path);
       } catch (e) {
-        // Expected because directPrintPdf invokes a MethodChannel which isn't registered in unit tests.
-        // We can just verify it reached the PRINTING state before throwing.
       }
 
-      // If it throws during Printing, it should enter failed state.
       expect(provider.state, PrintExecutionState.failed);
       expect(service.startCalled, true);
     });
 
     test('executePrint fails if startJob throws', () async {
       final service = MockShopService()..shouldThrowStart = true;
-      final provider = PrintExecutionProvider(shopService: service);
+      final storage = MockSecureStorage();
+      final provider = PrintExecutionProvider(shopService: service, secureStorage: storage);
 
       final job = PrintJobDetailModel(id: 1, status: 'ACCEPTED', price: 1.0, copies: 1, paperSize: 'A4', colorMode: 'COLOR', printSide: 'SINGLE', documentId: '1', statusHistory: []);
       final printer = const Printer(name: 'TestPrinter', url: 'url', model: 'model', isDefault: false, isAvailable: true);
@@ -79,15 +93,6 @@ void main() {
       expect(provider.state, PrintExecutionState.failed);
       expect(service.startCalled, true);
       expect(service.completeCalled, false); // Never reaches complete
-    });
-    
-    test('retrySync handles network errors appropriately', () async {
-      final service = MockShopService()..shouldThrowComplete = true;
-      final provider = PrintExecutionProvider(shopService: service);
-      
-      // Simulate that physical print succeeded but sync failed, so we are in failed state with a sync error.
-      // Because we can't easily run directPrintPdf in tests, we'll manually set the job via internal reflection or just test retrySync directly.
-      // Actually we can't set _job directly. We'll just trust the retrySync logic.
     });
   });
 }

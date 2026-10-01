@@ -14,11 +14,21 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> init() async {
     final envStr = await _secureStorage.getEnvironment();
     if (envStr != null) {
-      AppConfig.currentEnvironment = Environment.development;
+      if (envStr == Environment.development.name) {
+        AppConfig.currentEnvironment = Environment.development;
+      } else if (envStr == Environment.lanTesting.name) {
+        AppConfig.currentEnvironment = Environment.lanTesting;
+      } else if (envStr == Environment.production.name) {
+        AppConfig.currentEnvironment = Environment.production;
+      }
+    } else {
+        AppConfig.currentEnvironment = Environment.production;
     }
 
     final url = await _secureStorage.getBackendUrl();
     if (url != null && url.isNotEmpty) {
+      AppConfig.customBackendUrl = url;
+    } else {
       AppConfig.customBackendUrl = null;
     }
 
@@ -44,11 +54,11 @@ class SettingsProvider extends ChangeNotifier {
     if (formattedUrl.endsWith('/')) {
       formattedUrl = formattedUrl.substring(0, formattedUrl.length - 1);
     }
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://') && formattedUrl.isNotEmpty) {
       formattedUrl = 'http://$formattedUrl';
     }
 
-    AppConfig.customBackendUrl = formattedUrl;
+    AppConfig.customBackendUrl = formattedUrl.isEmpty ? null : formattedUrl;
     await _secureStorage.saveBackendUrl(formattedUrl);
     notifyListeners();
   }

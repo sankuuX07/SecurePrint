@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:printing/printing.dart';
 import '../models/print_job_detail_model.dart';
 import '../services/shop_service.dart';
+import '../services/secure_storage.dart';
 import '../core/errors/api_exception.dart';
 
 enum PrintExecutionState {
@@ -16,6 +17,7 @@ enum PrintExecutionState {
 
 class PrintExecutionProvider extends ChangeNotifier {
   final ShopService _shopService;
+  final SecureStorage _secureStorage;
 
   PrintExecutionState _state = PrintExecutionState.idle;
   PrintExecutionState get state => _state;
@@ -30,7 +32,9 @@ class PrintExecutionProvider extends ChangeNotifier {
 
   PrintExecutionProvider({
     ShopService? shopService,
-  }) : _shopService = shopService ?? ShopService();
+    SecureStorage? secureStorage,
+  }) : _shopService = shopService ?? ShopService(),
+       _secureStorage = secureStorage ?? SecureStorage();
 
   Future<void> executePrint(PrintJobDetailModel job, Printer printer, String localFilePath) async {
     if (_state == PrintExecutionState.starting || _state == PrintExecutionState.printing || _state == PrintExecutionState.syncing) {
@@ -41,16 +45,22 @@ class PrintExecutionProvider extends ChangeNotifier {
     _setState(PrintExecutionState.starting);
 
     try {
+      // 0. Check local print execution state to prevent duplicate physical prints
+      final localState = await _secureStorage.getJobPrintState(job.id);
+      if (localState == 'PRINTED_PENDING_SYNC') {
+        // Skip physical print and go straight to syncing
+        _setState(PrintExecutionState.syncing);
+        await _completeBackendSync(job.id);
+        return;
+      } else if (localState == 'COMPLETED_SYNCED') {
+        _setState(PrintExecutionState.completed);
+        return;
+      }
+
       // 1. Transition backend to PRINTING
       try {
         await _shopService.startJob(job.id);
       } catch (e) {
-        // If it's already PRINTING (e.g. from a previous failure), we can proceed.
-        // But if it's CANCELLED or COMPLETED, we must abort.
-        // Let's assume a generic catch and we let it proceed if we can detect it, 
-        // but to be safe, if we get an exception we might want to check the message.
-        // A 400 "Invalid state transition" usually means it's not ACCEPTED.
-        // We'll throw to be safe unless we want to fetch the status again.
         if (e.toString().contains('Invalid state transition')) {
            final currentJob = await _shopService.getPrintJobDetail(job.id);
            if (currentJob.status != 'PRINTING') {
@@ -74,8 +84,6 @@ class PrintExecutionProvider extends ChangeNotifier {
         _currentCopy = i + 1;
         notifyListeners();
         
-        // Use Printer settings if supported natively, but the package directPrintPdf ignores copies on Windows.
-        // Looping ensures N jobs are spooled.
         await Printing.directPrintPdf(
           printer: printer,
           onLayout: (_) => pdfBytes,
@@ -84,21 +92,28 @@ class PrintExecutionProvider extends ChangeNotifier {
         );
       }
 
+      // 2.5 Persist local state before syncing to prevent duplicate physical printing
+      await _secureStorage.saveJobPrintState(job.id, 'PRINTED_PENDING_SYNC');
+
       // 3. Transition backend to COMPLETED
       _setState(PrintExecutionState.syncing);
-      await _shopService.completeJob(job.id);
-
-      // 4. Success
-      _setState(PrintExecutionState.completed);
+      await _completeBackendSync(job.id);
 
     } catch (e) {
       _errorMessage = e.toString();
-      if (_state == PrintExecutionState.syncing) {
-        // We printed physically, but failed to tell backend. Keep it in syncing/failed so we can retry.
-        _setState(PrintExecutionState.failed); 
-      } else {
-        _setState(PrintExecutionState.failed);
-      }
+      _setState(PrintExecutionState.failed);
+    }
+  }
+
+  Future<void> _completeBackendSync(int jobId) async {
+    try {
+      await _shopService.completeJob(jobId);
+      await _secureStorage.saveJobPrintState(jobId, 'COMPLETED_SYNCED');
+      _setState(PrintExecutionState.completed);
+    } catch (e) {
+      // If completeJob fails, we stay in syncing/failed state but the local storage 
+      // is still PRINTED_PENDING_SYNC, so next time it won't physically print.
+      throw e;
     }
   }
 
@@ -108,8 +123,7 @@ class PrintExecutionProvider extends ChangeNotifier {
     _errorMessage = null;
     _setState(PrintExecutionState.syncing);
     try {
-      await _shopService.completeJob(_job!.id);
-      _setState(PrintExecutionState.completed);
+      await _completeBackendSync(_job!.id);
     } catch (e) {
       _errorMessage = 'Failed to sync status: $e';
       _setState(PrintExecutionState.failed);
