@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/shop_qr_provider.dart';
 
@@ -16,7 +17,8 @@ class _ShopProfileScreenState extends State<ShopProfileScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ShopQrProvider>().loadQr();
+      final auth = context.read<AuthProvider>();
+      context.read<ShopQrProvider>().loadQr(isLocalSession: auth.isLocalSession);
     });
   }
 

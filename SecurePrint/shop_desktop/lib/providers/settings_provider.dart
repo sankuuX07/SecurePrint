@@ -25,6 +25,17 @@ class SettingsProvider extends ChangeNotifier {
         AppConfig.currentEnvironment = Environment.production;
     }
 
+    final authModeStr = await _secureStorage.getAuthMode();
+    if (authModeStr != null) {
+      if (authModeStr == AuthenticationMode.productionBackend.name) {
+        AppConfig.authMode = AuthenticationMode.productionBackend;
+      } else {
+        AppConfig.authMode = AuthenticationMode.localDevelopment;
+      }
+    } else {
+      AppConfig.authMode = AuthenticationMode.localDevelopment;
+    }
+
     final url = await _secureStorage.getBackendUrl();
     if (url != null && url.isNotEmpty) {
       AppConfig.customBackendUrl = url;
@@ -33,6 +44,12 @@ class SettingsProvider extends ChangeNotifier {
     }
 
     _isInitialized = true;
+    notifyListeners();
+  }
+
+  Future<void> setAuthMode(AuthenticationMode mode) async {
+    AppConfig.authMode = mode;
+    await _secureStorage.saveAuthMode(mode.name);
     notifyListeners();
   }
 

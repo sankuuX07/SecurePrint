@@ -4,11 +4,33 @@ Welcome to SecurePrint Shop! This application securely bridges customer print re
 
 *Note: Application installation and Start Menu shortcuts will be handled seamlessly by the forthcoming Installer (M15).*
 
-## 1. First Launch
-Upon launching `SecurePrint-Shop.exe`, you will be greeted by the Login Screen. 
+## 1. First Launch & Authentication Modes
+Upon launching `SecurePrint-Shop.exe`, you will be greeted by the Login Screen.
+
+### Authentication Modes
+SecurePrint Shop supports two explicit authentication modes:
+- **Local Development Mode (Default)**: Allows shop owners and testers to create local accounts, test the UI workflow, and navigate the application offline without requiring a live backend connection.
+- **Production Backend Mode**: Uses the authoritative FastAPI server (`/api/v1/auth/login`) for authentication, role verification, and live print job coordination.
+
+### Local Test Accounts & Data Storage
+In Local Development mode:
+1. Click **Sign Up** from the login screen.
+2. Fill in the Shop details (Owner Name, Shop Name, Email, Phone, Password, Address, City).
+3. Click **Create Account** to generate an isolated local test account.
+4. Accounts are persisted securely in your Windows User Application Data directory:
+   `%APPDATA%\SecurePrintShop\local_accounts.json`
+5. Passwords are never stored in plaintext; they are hashed using salted PBKDF2-HMAC-SHA256 (100,000 iterations).
+
+### Switching Authentication Modes
+1. Sign in to the application.
+2. Navigate to the **Settings** tab.
+3. Under "General Configuration", use the **Authentication Mode** dropdown to toggle between:
+   - `LOCAL DEVELOPMENT (OFFLINE)`
+   - `PRODUCTION BACKEND (FASTAPI)`
+4. The application immediately updates the mode and persists your preference.
 
 ## 2. Backend Configuration
-If your organization requires a custom server network (or LAN environment), you can configure it before logging in:
+If your organization requires a custom server network (or LAN environment), you can configure it before or after logging in:
 1. Click the **Settings** gear icon on the application.
 2. Under "Configuration", locate **Backend URL**.
 3. Enter your assigned production endpoint (e.g., `https://api.secureprint.com`) and click **Save**.

@@ -4,11 +4,17 @@ enum Environment {
   production,
 }
 
+enum AuthenticationMode {
+  localDevelopment,
+  productionBackend,
+}
+
 class AppConfig {
   static const String version = "1.0.0";
   
   // These will be initialized by SettingsProvider on startup
   static Environment currentEnvironment = Environment.production;
+  static AuthenticationMode authMode = AuthenticationMode.localDevelopment;
   static String? customBackendUrl;
   static bool enableDetailedLogging = false;
 
@@ -35,6 +41,15 @@ class AppConfig {
         return "LAN Testing";
       case Environment.production:
         return "Production";
+    }
+  }
+
+  static String get authModeName {
+    switch (authMode) {
+      case AuthenticationMode.localDevelopment:
+        return "Local Development";
+      case AuthenticationMode.productionBackend:
+        return "Production Backend";
     }
   }
 }

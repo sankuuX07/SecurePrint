@@ -26,10 +26,25 @@ class ShopQrProvider extends ChangeNotifier {
   ShopQrModel? get shopQr => _shopQr;
   bool get isRegenerating => _isRegenerating;
 
-  Future<void> loadQr() async {
+  bool _isLocalSession = false;
+  bool get isLocalSession => _isLocalSession;
+
+  Future<void> loadQr({bool isLocalSession = false}) async {
+    _isLocalSession = isLocalSession;
     _state = ShopQrState.loading;
     _errorMessage = null;
     notifyListeners();
+
+    if (isLocalSession) {
+      _shopQr = ShopQrModel(
+        qrIdentifier: 'SP-SHOP-LOCAL-DEV-PREVIEW',
+        status: 'OFFLINE_PREVIEW',
+        createdAt: DateTime.now().toIso8601String(),
+      );
+      _state = ShopQrState.loaded;
+      notifyListeners();
+      return;
+    }
 
     try {
       _shopQr = await _shopService.getShopQr();
@@ -46,6 +61,11 @@ class ShopQrProvider extends ChangeNotifier {
   }
 
   Future<void> regenerateQr() async {
+    if (_isLocalSession) {
+      _errorMessage = 'QR regeneration requires production backend connection.';
+      notifyListeners();
+      return;
+    }
     if (_isRegenerating) return;
     
     _isRegenerating = true;

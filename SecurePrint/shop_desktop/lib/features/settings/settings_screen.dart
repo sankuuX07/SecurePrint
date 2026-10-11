@@ -120,6 +120,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const Divider(),
+                  _buildSettingRow(
+                    'Authentication Mode',
+                    DropdownButton<AuthenticationMode>(
+                      value: AppConfig.authMode,
+                      items: const [
+                        DropdownMenuItem(
+                          value: AuthenticationMode.localDevelopment,
+                          child: Text('LOCAL DEVELOPMENT (OFFLINE)'),
+                        ),
+                        DropdownMenuItem(
+                          value: AuthenticationMode.productionBackend,
+                          child: Text('PRODUCTION BACKEND (FASTAPI)'),
+                        ),
+                      ],
+                      onChanged: (mode) {
+                        if (mode != null) {
+                          settingsProvider.setAuthMode(mode);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Switched auth mode to ${AppConfig.authModeName}'),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  const Divider(),
                   const SizedBox(height: 16),
                   const Text('Backend URL', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
@@ -223,6 +250,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildSettingRow(
+                    'Session Type',
+                    context.watch<AuthProvider>().isLocalSession
+                        ? const Text('Local Dev Preview', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber))
+                        : const Text('Production Backend', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                  ),
+                  const Divider(),
                   _buildSettingRow(
                     'Logged-in Shop',
                     Text(dashboardProvider.shopProfile?.shopName ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),

@@ -35,10 +35,35 @@ class DashboardProvider extends ChangeNotifier {
   int get completedJobsCount => _recentJobs.where((j) => j.status == 'COMPLETED').length;
   int get cancelledJobsCount => _recentJobs.where((j) => j.status == 'CANCELLED').length;
 
-  Future<void> loadDashboard() async {
+  bool _isLocalSession = false;
+  UserModel? _localUser;
+
+  bool get isLocalSession => _isLocalSession;
+
+  Future<void> loadDashboard({bool isLocalSession = false, UserModel? localUser}) async {
+    _isLocalSession = isLocalSession;
+    _localUser = localUser;
+
     _state = DashboardState.loading;
     _errorMessage = null;
     notifyListeners();
+
+    if (isLocalSession) {
+      _shopProfile = localUser ?? UserModel(
+        id: 1,
+        name: 'Local Test Owner',
+        email: 'local@shop.dev',
+        phone: '555-0100',
+        role: 'SHOP',
+        shopName: 'Local Test Shop (Preview)',
+        address: '123 Development Way',
+        city: 'Local City',
+      );
+      _recentJobs = [];
+      _state = DashboardState.loaded;
+      notifyListeners();
+      return;
+    }
 
     try {
       _shopProfile = await _shopService.getShopProfile();
@@ -60,6 +85,6 @@ class DashboardProvider extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    await loadDashboard();
+    await loadDashboard(isLocalSession: _isLocalSession, localUser: _localUser);
   }
 }

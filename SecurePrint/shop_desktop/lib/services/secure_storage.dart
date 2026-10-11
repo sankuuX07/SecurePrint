@@ -59,4 +59,85 @@ class SecureStorage {
   Future<void> deleteJobPrintState(int jobId) async {
     await _storage.delete(key: 'secureprint_job_state_$jobId');
   }
+
+  // Auth Mode and Preferences
+  static const _authModeKey = 'secureprint_auth_mode';
+  static const _rememberEmailKey = 'secureprint_remember_email';
+  static const _rememberSessionKey = 'secureprint_remember_session';
+  static const _localUserKey = 'secureprint_active_local_user';
+
+  Future<void> saveAuthMode(String mode) async {
+    try {
+      await _storage.write(key: _authModeKey, value: mode);
+    } catch (_) {}
+  }
+
+  Future<String?> getAuthMode() async {
+    try {
+      return await _storage.read(key: _authModeKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveRememberedEmail(String email) async {
+    try {
+      await _storage.write(key: _rememberEmailKey, value: email);
+    } catch (_) {}
+  }
+
+  Future<String?> getRememberedEmail() async {
+    try {
+      return await _storage.read(key: _rememberEmailKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> deleteRememberedEmail() async {
+    try {
+      await _storage.delete(key: _rememberEmailKey);
+    } catch (_) {}
+  }
+
+  Future<void> saveRememberSession(bool remember) async {
+    try {
+      await _storage.write(key: _rememberSessionKey, value: remember ? 'true' : 'false');
+    } catch (_) {}
+  }
+
+  Future<bool> getRememberSession() async {
+    try {
+      final val = await _storage.read(key: _rememberSessionKey);
+      return val == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> deleteRememberSession() async {
+    try {
+      await _storage.delete(key: _rememberSessionKey);
+    } catch (_) {}
+  }
+
+  Future<void> saveLocalUserData(String jsonStr) async {
+    try {
+      await _storage.write(key: _localUserKey, value: jsonStr);
+    } catch (_) {}
+  }
+
+  Future<String?> getLocalUserData() async {
+    try {
+      return await _storage.read(key: _localUserKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> deleteLocalUserData() async {
+    try {
+      await _storage.delete(key: _localUserKey);
+    } catch (_) {}
+  }
 }

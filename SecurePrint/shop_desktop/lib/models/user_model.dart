@@ -31,4 +31,17 @@ class UserModel {
       city: json['city'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'role': role,
+      'shop_name': shopName,
+      'address': address,
+      'city': city,
+    };
+  }
 }

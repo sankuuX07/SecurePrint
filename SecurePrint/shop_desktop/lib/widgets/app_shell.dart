@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/print_jobs/print_jobs_screen.dart';
 import '../features/history/history_screen.dart';
@@ -27,9 +29,42 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final isLocal = authProvider.isLocalSession;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SecurePrint Shop'),
+        title: Row(
+          children: [
+            const Text('SecurePrint Shop'),
+            if (isLocal) ...[
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade400),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.developer_mode, size: 14, color: Colors.amber.shade900),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Dev Preview',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         elevation: 2,
       ),
       body: Row(

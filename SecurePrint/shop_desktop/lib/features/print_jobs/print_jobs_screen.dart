@@ -18,12 +18,14 @@ class _PrintJobsScreenState extends State<PrintJobsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PrintJobsProvider>().loadJobs(reset: true);
+      final auth = context.read<AuthProvider>();
+      context.read<PrintJobsProvider>().loadJobs(reset: true, isLocalSession: auth.isLocalSession);
     });
   }
 
   void _handleRefresh() {
-    context.read<PrintJobsProvider>().refresh();
+    final auth = context.read<AuthProvider>();
+    context.read<PrintJobsProvider>().loadJobs(reset: true, isLocalSession: auth.isLocalSession);
   }
 
   @override
@@ -42,6 +44,28 @@ class _PrintJobsScreenState extends State<PrintJobsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (provider.isLocalSession)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.amber.shade900, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Local Development Mode: Live cloud print jobs are disabled. Connect to the production backend to receive customer jobs.',
+                      style: TextStyle(fontSize: 13, color: Colors.amber.shade900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

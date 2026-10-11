@@ -33,7 +33,11 @@ class PrintJobsProvider extends ChangeNotifier {
   String? get selectedStatus => _selectedStatus;
   bool get hasNextPage => _hasNextPage;
 
-  Future<void> loadJobs({bool reset = false}) async {
+  bool _isLocalSession = false;
+  bool get isLocalSession => _isLocalSession;
+
+  Future<void> loadJobs({bool reset = false, bool isLocalSession = false}) async {
+    _isLocalSession = isLocalSession;
     if (reset) {
       _currentPage = 1;
       _hasNextPage = true;
@@ -42,6 +46,14 @@ class PrintJobsProvider extends ChangeNotifier {
     _state = PrintJobsState.loading;
     _errorMessage = null;
     notifyListeners();
+
+    if (isLocalSession) {
+      _jobs = [];
+      _hasNextPage = false;
+      _state = PrintJobsState.loaded;
+      notifyListeners();
+      return;
+    }
 
     try {
       final fetchedJobs = await _shopService.getRecentJobs(

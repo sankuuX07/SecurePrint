@@ -40,7 +40,7 @@ class JobDetailProvider extends ChangeNotifier {
     try {
       final futures = await Future.wait([
         _shopService.getPrintJobDetail(jobId),
-        _shopService.getJobPayment(jobId).catchError((e) {
+        _shopService.getJobPayment(jobId).then<PaymentModel?>((p) => p).catchError((e) {
           // If payment doesn't exist or errors out, don't fail the whole view
           return null;
         }),
