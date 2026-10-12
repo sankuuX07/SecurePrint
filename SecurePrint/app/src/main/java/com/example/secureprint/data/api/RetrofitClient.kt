@@ -8,11 +8,11 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 object RetrofitClient {
-    // Set to true when testing on a physical device connected to the same LAN
+    // Set to true when testing on a physical device (USB adb reverse or LAN)
     private const val USE_PHYSICAL_DEVICE = true
     
-    // PC's actual LAN IPv4 address
-    private const val PHYSICAL_DEVICE_IP = "10.232.3.122"
+    // ADB reverse (adb reverse tcp:8000 tcp:8000) routes 127.0.0.1:8000 over USB to PC host
+    private const val PHYSICAL_DEVICE_IP = "127.0.0.1"
 
     private val BASE_URL = if (USE_PHYSICAL_DEVICE) {
         "http://$PHYSICAL_DEVICE_IP:8000/"
