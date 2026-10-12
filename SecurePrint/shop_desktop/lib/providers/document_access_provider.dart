@@ -46,12 +46,12 @@ class DocumentAccessProvider extends ChangeNotifier {
       final responseMap = await _shopService.authorizeDocumentAccess(qrToken);
       _accessModel = TemporaryDocumentAccessModel.fromJson(responseMap);
       
-      if (_accessModel!.status == 'active') {
+      if (_accessModel!.isAuthorized) {
         _setState(DocumentAccessState.authorized);
-      } else if (_accessModel!.status == 'expired') {
+      } else if (_accessModel!.isExpired) {
         _setState(DocumentAccessState.expired);
         _errorMessage = 'Authorization has expired.';
-      } else if (_accessModel!.status == 'revoked') {
+      } else if (_accessModel!.isRevoked) {
         _setState(DocumentAccessState.revoked);
         _errorMessage = 'Authorization has been revoked.';
       } else {

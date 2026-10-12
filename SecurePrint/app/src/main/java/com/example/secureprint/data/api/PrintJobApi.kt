@@ -11,10 +11,10 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface PrintJobApi {
-    @POST("print-jobs/")
+    @POST("api/v1/print-jobs/")
     suspend fun createPrintJob(@Body request: PrintJobCreate): PrintJobResponse
 
-    @GET("print-jobs/customer")
+    @GET("api/v1/print-jobs/customer")
     suspend fun getCustomerPrintJobs(
         @Query("status") status: String? = null,
         @Query("shop_id") shopId: Int? = null,
@@ -22,35 +22,35 @@ interface PrintJobApi {
         @Query("page_size") pageSize: Int = 20
     ): List<PrintJobResponse>
     
-    @GET("print-jobs/customer/{jobId}")
+    @GET("api/v1/print-jobs/customer/{jobId}")
     suspend fun getCustomerPrintJobDetail(@Path("jobId") jobId: Int): PrintJobDetailResponse
     
-    @POST("print-jobs/{jobId}/cancel")
+    @POST("api/v1/print-jobs/{jobId}/cancel")
     suspend fun cancelPrintJob(@Path("jobId") jobId: Int): PrintJobResponse
 
-    @POST("print-jobs/{jobId}/secure-access")
+    @POST("api/v1/print-jobs/{jobId}/secure-access")
     suspend fun createSecureAccessToken(@Path("jobId") jobId: Int): SecureTokenResponse
 
-    @GET("print-jobs/shop")
+    @GET("api/v1/print-jobs/shop")
     suspend fun getShopPrintJobs(
         @Query("status") status: String? = null,
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 20
     ): List<PrintJobResponse>
     
-    @GET("print-jobs/shop/{jobId}")
+    @GET("api/v1/print-jobs/shop/{jobId}")
     suspend fun getShopPrintJobDetail(@Path("jobId") jobId: Int): PrintJobDetailResponse
 
-    @POST("print-jobs/{jobId}/accept")
+    @POST("api/v1/print-jobs/{jobId}/accept")
     suspend fun acceptPrintJob(@Path("jobId") jobId: Int): PrintJobResponse
 
-    @POST("print-jobs/{jobId}/start")
+    @POST("api/v1/print-jobs/{jobId}/start")
     suspend fun startPrintJob(@Path("jobId") jobId: Int): PrintJobResponse
 
-    @POST("print-jobs/{jobId}/complete")
+    @POST("api/v1/print-jobs/{jobId}/complete")
     suspend fun completePrintJob(@Path("jobId") jobId: Int): PrintJobResponse
     
-    @GET("print-jobs/admin")
+    @GET("api/v1/print-jobs/admin")
     suspend fun getAdminPrintJobs(
         @Query("status") status: String? = null,
         @Query("shop_id") shopId: Int? = null,
@@ -59,6 +59,6 @@ interface PrintJobApi {
         @Query("page_size") pageSize: Int = 20
     ): List<PrintJobResponse>
     
-    @GET("print-jobs/admin/{jobId}")
+    @GET("api/v1/print-jobs/admin/{jobId}")
     suspend fun getAdminPrintJobDetail(@Path("jobId") jobId: Int): PrintJobDetailResponse
 }
