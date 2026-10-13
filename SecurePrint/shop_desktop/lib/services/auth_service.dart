@@ -17,7 +17,11 @@ class AuthService {
   /// Authenticates a Shop user and returns the JWT access token.
   /// Throws [AuthServiceException] if authentication fails or if the user is not a SHOP.
   Future<String> login(String email, String password) async {
-    final url = Uri.parse('${AppConfig.backendUrl}/api/v1/auth/login');
+    final baseUrl = AppConfig.backendUrl.trim();
+    if (baseUrl.isEmpty) {
+      throw AuthServiceException('Backend URL is not configured. Please check connection settings.');
+    }
+    final url = Uri.parse('$baseUrl/api/v1/auth/login');
     
     try {
       final response = await _client.post(

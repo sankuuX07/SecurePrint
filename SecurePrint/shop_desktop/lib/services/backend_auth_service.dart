@@ -25,7 +25,11 @@ class BackendAuthService implements IAuthService {
 
   @override
   Future<void> register(ShopRegistrationData data) async {
-    final url = Uri.parse('${AppConfig.backendUrl}/api/v1/auth/register');
+    final baseUrl = AppConfig.backendUrl.trim();
+    if (baseUrl.isEmpty) {
+      throw AuthServiceException('Backend URL is not configured. Please check connection settings.');
+    }
+    final url = Uri.parse('$baseUrl/api/v1/auth/register');
 
     final payload = {
       'name': data.ownerName,

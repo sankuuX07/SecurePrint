@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../core/config/app_config.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../services/secure_storage.dart';
 import 'sign_up_screen.dart';
 
@@ -23,6 +25,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String? _emailError;
   String? _passwordError;
+
+  bool _isTestingConnection = false;
+  String? _connectionTestResult;
+  bool? _connectionTestSuccess;
 
   @override
   void initState() {
@@ -96,6 +102,469 @@ class _LoginScreenState extends State<LoginScreen> {
         );
   }
 
+  Future<void> _handleTestConnection([SettingsProvider? settingsProvider]) async {
+    setState(() {
+      _isTestingConnection = true;
+      _connectionTestResult = null;
+      _connectionTestSuccess = null;
+    });
+
+    final targetUrl = AppConfig.backendUrl.trim();
+    if (targetUrl.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _isTestingConnection = false;
+          _connectionTestSuccess = false;
+          _connectionTestResult = 'No backend URL configured. Please configure in settings.';
+        });
+      }
+      return;
+    }
+
+    bool isOnline = false;
+    try {
+      if (settingsProvider != null) {
+        isOnline = await settingsProvider.checkBackendConnection();
+      } else {
+        final uri = Uri.parse('$targetUrl/');
+        final response = await http.get(uri).timeout(const Duration(seconds: 4));
+        isOnline = response.statusCode >= 200 && response.statusCode < 400;
+      }
+    } catch (_) {
+      isOnline = false;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isTestingConnection = false;
+      _connectionTestSuccess = isOnline;
+      _connectionTestResult = isOnline
+          ? 'Connected to FastAPI backend ($targetUrl)'
+          : 'Cannot reach backend at $targetUrl';
+    });
+  }
+
+  void _showConnectionDialog(BuildContext context, SettingsProvider? settingsProvider) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        final urlController = TextEditingController(text: AppConfig.backendUrl);
+        bool isTesting = false;
+        String? testStatus;
+        bool? testSuccess;
+
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.settings, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Server & Auth Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: SizedBox(
+                width: 480,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Authentication Mode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      RadioListTile<AuthenticationMode>(
+                        value: AuthenticationMode.productionBackend,
+                        groupValue: AppConfig.authMode,
+                        title: const Text('Production Backend (FastAPI)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        subtitle: const Text('Connects to FastAPI server for real authentication and jobs.', style: TextStyle(fontSize: 12)),
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (mode) async {
+                          if (mode != null) {
+                            if (settingsProvider != null) {
+                              await settingsProvider.setAuthMode(mode);
+                            } else {
+                              AppConfig.authMode = mode;
+                            }
+                            setDialogState(() {});
+                            if (mounted) setState(() {});
+                          }
+                        },
+                      ),
+                      RadioListTile<AuthenticationMode>(
+                        value: AuthenticationMode.localDevelopment,
+                        groupValue: AppConfig.authMode,
+                        title: const Text('Local Development (Offline Demo)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        subtitle: const Text('Isolated offline testing using local dummy accounts.', style: TextStyle(fontSize: 12)),
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (mode) async {
+                          if (mode != null) {
+                            if (settingsProvider != null) {
+                              await settingsProvider.setAuthMode(mode);
+                            } else {
+                              AppConfig.authMode = mode;
+                            }
+                            setDialogState(() {});
+                            if (mounted) setState(() {});
+                          }
+                        },
+                      ),
+                      const Divider(height: 24),
+                      const Text('Environment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      DropdownButton<Environment>(
+                        isExpanded: true,
+                        value: AppConfig.currentEnvironment,
+                        items: Environment.values.map((env) {
+                          String label = env.name.toUpperCase();
+                          if (env == Environment.development) label += ' (http://127.0.0.1:8000)';
+                          if (env == Environment.lanTesting) label += ' (http://192.168.1.100:8000)';
+                          return DropdownMenuItem(value: env, child: Text(label, style: const TextStyle(fontSize: 13)));
+                        }).toList(),
+                        onChanged: (env) async {
+                          if (env != null) {
+                            if (settingsProvider != null) {
+                              await settingsProvider.setEnvironment(env);
+                            } else {
+                              AppConfig.currentEnvironment = env;
+                            }
+                            urlController.text = AppConfig.backendUrl;
+                            setDialogState(() {});
+                            if (mounted) setState(() {});
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('Backend URL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: urlController,
+                              decoration: const InputDecoration(
+                                hintText: 'e.g. http://127.0.0.1:8000',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              ),
+                              style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () async {
+                              if (settingsProvider != null) {
+                                await settingsProvider.setBackendUrl(urlController.text);
+                              } else {
+                                AppConfig.customBackendUrl = urlController.text.trim();
+                              }
+                              setDialogState(() {
+                                testStatus = 'Backend URL saved successfully.';
+                                testSuccess = true;
+                              });
+                              if (mounted) setState(() {});
+                            },
+                            child: const Text('Save'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (testStatus != null)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: testSuccess == true ? Colors.green.shade50 : Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: testSuccess == true ? Colors.green.shade300 : Colors.red.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            testStatus!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: testSuccess == true ? Colors.green.shade900 : Colors.red.shade900,
+                            ),
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          OutlinedButton.icon(
+                            icon: isTesting
+                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                : const Icon(Icons.wifi, size: 16),
+                            label: const Text('Test Connection', style: TextStyle(fontSize: 12)),
+                            onPressed: isTesting
+                                ? null
+                                : () async {
+                                    setDialogState(() => isTesting = true);
+                                    bool online = false;
+                                    if (settingsProvider != null) {
+                                      online = await settingsProvider.checkBackendConnection();
+                                    } else {
+                                      try {
+                                        final uri = Uri.parse('${AppConfig.backendUrl}/');
+                                        final res = await http.get(uri).timeout(const Duration(seconds: 4));
+                                        online = res.statusCode >= 200 && res.statusCode < 400;
+                                      } catch (_) {
+                                        online = false;
+                                      }
+                                    }
+                                    setDialogState(() {
+                                      isTesting = false;
+                                      testSuccess = online;
+                                      testStatus = online
+                                          ? 'Successfully connected to backend at ${AppConfig.backendUrl}'
+                                          : 'Connection failed: Cannot reach backend at ${AppConfig.backendUrl}';
+                                    });
+                                  },
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () async {
+                              if (settingsProvider != null) {
+                                await settingsProvider.resetToDefaults();
+                              } else {
+                                AppConfig.currentEnvironment = Environment.development;
+                                AppConfig.authMode = AuthenticationMode.productionBackend;
+                                AppConfig.customBackendUrl = null;
+                              }
+                              urlController.text = AppConfig.backendUrl;
+                              setDialogState(() {
+                                testStatus = null;
+                                testSuccess = null;
+                              });
+                              if (mounted) setState(() {});
+                            },
+                            child: const Text('Reset Defaults', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    urlController.dispose();
+                    Navigator.of(dialogCtx).pop();
+                  },
+                  child: const Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildConnectionCard(SettingsProvider? settingsProvider, bool isLocalMode) {
+    if (isLocalMode) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade50,
+          border: Border.all(color: Colors.amber.shade400),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.developer_mode, color: Colors.amber.shade900, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Local Development Mode (Offline)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber.shade900,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  key: const Key('configure_connection_button'),
+                  icon: const Icon(Icons.settings, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Configure Connection',
+                  onPressed: () => _showConnectionDialog(context, settingsProvider),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Offline Dev Demo - FastAPI connection disabled',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.amber.shade800,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                TextButton(
+                  key: const Key('switch_to_backend_button'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () {
+                    if (settingsProvider != null) {
+                      settingsProvider.setAuthMode(AuthenticationMode.productionBackend);
+                    } else {
+                      AppConfig.authMode = AuthenticationMode.productionBackend;
+                    }
+                    setState(() {
+                      _connectionTestResult = null;
+                      _connectionTestSuccess = null;
+                    });
+                  },
+                  child: const Text('Switch to Backend', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        border: Border.all(color: Colors.blue.shade300),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _connectionTestSuccess == true
+                    ? Icons.cloud_done
+                    : (_connectionTestSuccess == false ? Icons.cloud_off : Icons.cloud_outlined),
+                color: _connectionTestSuccess == true
+                    ? Colors.green.shade700
+                    : (_connectionTestSuccess == false ? Colors.red.shade700 : Colors.blue.shade900),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'Production Backend Mode (FastAPI)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade900,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        AppConfig.environmentName,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                key: const Key('configure_connection_button'),
+                icon: const Icon(Icons.settings, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Configure Connection',
+                onPressed: () => _showConnectionDialog(context, settingsProvider),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  AppConfig.backendUrl.isNotEmpty ? AppConfig.backendUrl : 'No backend URL configured',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: Colors.blue.shade700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton.icon(
+                key: const Key('test_connection_button'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  visualDensity: VisualDensity.compact,
+                ),
+                icon: _isTestingConnection
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.wifi, size: 14),
+                label: Text(_isTestingConnection ? 'Testing' : 'Test', style: const TextStyle(fontSize: 12)),
+                onPressed: _isTestingConnection ? null : () => _handleTestConnection(settingsProvider),
+              ),
+            ],
+          ),
+          if (_connectionTestResult != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _connectionTestSuccess == true ? Colors.green.shade100 : Colors.red.shade100,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _connectionTestSuccess == true ? Icons.check_circle : Icons.error_outline,
+                    size: 14,
+                    color: _connectionTestSuccess == true ? Colors.green.shade800 : Colors.red.shade800,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _connectionTestResult!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: _connectionTestSuccess == true ? Colors.green.shade900 : Colors.red.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Future<void> _navigateToSignUp() async {
     context.read<AuthProvider>().clearError();
     final registeredEmail = await Navigator.of(context).push<String>(
@@ -115,16 +584,29 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final settingsProvider = Provider.of<SettingsProvider?>(context);
     final isLoading = authProvider.state == AuthState.loggingIn;
     final errorMessage = authProvider.errorMessage;
     final isLocalMode = AppConfig.authMode == AuthenticationMode.localDevelopment;
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Server & Connection Settings',
+            onPressed: () => _showConnectionDialog(context, settingsProvider),
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 440),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -157,45 +639,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
-                // Auth Mode Badge
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isLocalMode ? Colors.amber.shade50 : Colors.blue.shade50,
-                      border: Border.all(
-                        color: isLocalMode ? Colors.amber.shade300 : Colors.blue.shade300,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isLocalMode ? Icons.developer_mode : Icons.cloud_outlined,
-                          size: 16,
-                          color: isLocalMode ? Colors.amber.shade900 : Colors.blue.shade900,
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            isLocalMode
-                                ? 'Local Development Mode (Offline)'
-                                : 'Production Backend Mode',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isLocalMode ? Colors.amber.shade900 : Colors.blue.shade900,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                // Interactive Connection & Auth Mode Section
+                _buildConnectionCard(settingsProvider, isLocalMode),
+                const SizedBox(height: 20),
 
                 // General Error Banner (shown only when an actual error occurred)
                 if (errorMessage != null)

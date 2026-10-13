@@ -7,6 +7,7 @@ import 'package:shop_desktop/features/auth/sign_up_screen.dart';
 import 'package:shop_desktop/providers/auth_provider.dart';
 import 'package:shop_desktop/services/auth_service_interface.dart';
 import 'package:shop_desktop/models/user_model.dart';
+import 'package:shop_desktop/providers/settings_provider.dart';
 import 'local_auth_test.dart';
 
 class MockTestAuthService implements IAuthService {
@@ -38,10 +39,16 @@ class MockTestAuthService implements IAuthService {
   }
 }
 
-Widget createTestApp({required AuthProvider authProvider, Widget? child}) {
+Widget createTestApp({
+  required AuthProvider authProvider,
+  SettingsProvider? settingsProvider,
+  Widget? child,
+}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+      if (settingsProvider != null)
+        ChangeNotifierProvider<SettingsProvider>.value(value: settingsProvider),
     ],
     child: MaterialApp(
       home: child ?? const LoginScreen(),
@@ -53,11 +60,13 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    AppConfig.authMode = AuthenticationMode.localDevelopment;
+    AppConfig.currentEnvironment = Environment.development;
+    AppConfig.authMode = AuthenticationMode.productionBackend;
+    AppConfig.customBackendUrl = null;
   });
 
   group('LoginScreen Widget Tests', () {
-    testWidgets('LoginScreen displays branding, Welcome Back, fields, options and Sign Up link', (tester) async {
+    testWidgets('LoginScreen displays default backend mode with 127.0.0.1:8000 and connection controls', (tester) async {
       tester.view.physicalSize = const Size(1280, 1024);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -77,8 +86,11 @@ void main() {
       expect(find.text('Welcome Back'), findsOneWidget);
       expect(find.text('Sign in to your shop account'), findsOneWidget);
 
-      // Check Mode Badge
-      expect(find.text('Local Development Mode (Offline)'), findsOneWidget);
+      // Check Backend Mode Card & Target URL
+      expect(find.text('Production Backend Mode (FastAPI)'), findsOneWidget);
+      expect(find.text('http://127.0.0.1:8000'), findsOneWidget);
+      expect(find.byKey(const Key('test_connection_button')), findsOneWidget);
+      expect(find.byKey(const Key('configure_connection_button')), findsWidgets);
 
       // Check Input Fields
       expect(find.widgetWithText(TextField, 'Email'), findsOneWidget);
@@ -98,6 +110,70 @@ void main() {
 
       // Verify no permanent server error is displayed
       expect(find.text('Unable to connect to SecurePrint server.'), findsNothing);
+    });
+
+    testWidgets('Tapping configure connection opens settings dialog', (tester) async {
+      tester.view.physicalSize = const Size(1280, 1024);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final mockAuth = MockTestAuthService();
+      final authProvider = AuthProvider(
+        authService: mockAuth,
+        secureStorage: InMemorySecureStorage(),
+      );
+
+      await tester.pumpWidget(createTestApp(authProvider: authProvider));
+      await tester.pumpAndSettle();
+
+      // Tap configure connection button
+      await tester.tap(find.byKey(const Key('configure_connection_button')).first);
+      await tester.pumpAndSettle();
+
+      // Verify Dialog opens
+      expect(find.text('Server & Auth Settings'), findsOneWidget);
+      expect(find.text('Authentication Mode'), findsOneWidget);
+      expect(find.text('Environment'), findsOneWidget);
+      expect(find.text('Backend URL'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Close'), findsOneWidget);
+
+      // Close dialog
+      await tester.tap(find.widgetWithText(TextButton, 'Close'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Server & Auth Settings'), findsNothing);
+    });
+
+    testWidgets('Explicit offline mode shows clear disclaimer and switch to backend button', (tester) async {
+      tester.view.physicalSize = const Size(1280, 1024);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      AppConfig.authMode = AuthenticationMode.localDevelopment;
+
+      final mockAuth = MockTestAuthService();
+      final authProvider = AuthProvider(
+        authService: mockAuth,
+        secureStorage: InMemorySecureStorage(),
+      );
+
+      await tester.pumpWidget(createTestApp(authProvider: authProvider));
+      await tester.pumpAndSettle();
+
+      // Check offline badge and disclaimer
+      expect(find.text('Local Development Mode (Offline)'), findsOneWidget);
+      expect(find.text('Offline Dev Demo - FastAPI connection disabled'), findsOneWidget);
+      expect(find.byKey(const Key('switch_to_backend_button')), findsOneWidget);
+
+      // Tap Switch to Backend
+      await tester.tap(find.byKey(const Key('switch_to_backend_button')));
+      await tester.pumpAndSettle();
+
+      expect(AppConfig.authMode, AuthenticationMode.productionBackend);
+      expect(find.text('Production Backend Mode (FastAPI)'), findsOneWidget);
+      expect(find.text('http://127.0.0.1:8000'), findsOneWidget);
     });
 
     testWidgets('Empty fields show field-specific validation errors', (tester) async {
@@ -165,9 +241,9 @@ void main() {
       await tester.tap(find.text('Sign Up'));
       await tester.pumpAndSettle();
 
-      // Verify SignUpScreen is displayed
+      // Verify SignUpScreen is displayed with production account description
       expect(find.text('Create Shop Account'), findsOneWidget);
-      expect(find.text('Register a local test account for development'), findsOneWidget);
+      expect(find.text('Register a production shop account'), findsOneWidget);
 
       // Tap Back to Sign In
       final signInLink = find.widgetWithText(TextButton, 'Sign In');

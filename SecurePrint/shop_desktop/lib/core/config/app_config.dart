@@ -13,8 +13,8 @@ class AppConfig {
   static const String version = "1.0.0";
   
   // These will be initialized by SettingsProvider on startup
-  static Environment currentEnvironment = Environment.production;
-  static AuthenticationMode authMode = AuthenticationMode.localDevelopment;
+  static Environment currentEnvironment = Environment.development;
+  static AuthenticationMode authMode = AuthenticationMode.productionBackend;
   static String? customBackendUrl;
   static bool enableDetailedLogging = false;
 

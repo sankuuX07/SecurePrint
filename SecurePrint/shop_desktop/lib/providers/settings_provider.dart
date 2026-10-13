@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../services/secure_storage.dart';
 import '../core/config/app_config.dart';
 
 class SettingsProvider extends ChangeNotifier {
   final SecureStorage _secureStorage;
+  final http.Client _client;
   bool _isInitialized = false;
 
-  SettingsProvider({SecureStorage? secureStorage}) 
-      : _secureStorage = secureStorage ?? SecureStorage();
+  SettingsProvider({SecureStorage? secureStorage, http.Client? client}) 
+      : _secureStorage = secureStorage ?? SecureStorage(),
+        _client = client ?? http.Client();
 
   bool get isInitialized => _isInitialized;
 
@@ -22,18 +25,18 @@ class SettingsProvider extends ChangeNotifier {
         AppConfig.currentEnvironment = Environment.production;
       }
     } else {
-        AppConfig.currentEnvironment = Environment.production;
+      AppConfig.currentEnvironment = Environment.development;
     }
 
     final authModeStr = await _secureStorage.getAuthMode();
     if (authModeStr != null) {
       if (authModeStr == AuthenticationMode.productionBackend.name) {
         AppConfig.authMode = AuthenticationMode.productionBackend;
-      } else {
+      } else if (authModeStr == AuthenticationMode.localDevelopment.name) {
         AppConfig.authMode = AuthenticationMode.localDevelopment;
       }
     } else {
-      AppConfig.authMode = AuthenticationMode.localDevelopment;
+      AppConfig.authMode = AuthenticationMode.productionBackend;
     }
 
     final url = await _secureStorage.getBackendUrl();
@@ -83,5 +86,22 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> toggleDetailedLogging(bool enable) async {
     AppConfig.enableDetailedLogging = enable;
     notifyListeners();
+  }
+
+  Future<bool> checkBackendConnection() async {
+    final baseUrl = AppConfig.backendUrl.trim();
+    if (baseUrl.isEmpty) return false;
+    try {
+      final response = await _client.get(Uri.parse('$baseUrl/')).timeout(const Duration(seconds: 4));
+      return response.statusCode >= 200 && response.statusCode < 400;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> resetToDefaults() async {
+    await setEnvironment(Environment.development);
+    await setAuthMode(AuthenticationMode.productionBackend);
+    await setBackendUrl('');
   }
 }
