@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:printing/printing.dart';
 import '../../models/print_job_detail_model.dart';
 import '../../providers/printer_provider.dart';
+import '../../models/print_settings.dart';
 import 'print_execution_dialog.dart';
 
 class PrinterSelectionScreen extends StatefulWidget {
@@ -20,6 +20,22 @@ class PrinterSelectionScreen extends StatefulWidget {
 }
 
 class _PrinterSelectionScreenState extends State<PrinterSelectionScreen> {
+  bool get _isDuplexRequested {
+    try {
+      return PrintDuplexMode.fromJobString(widget.job.printSide) == PrintDuplexMode.duplex;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get _isColorRequested {
+    try {
+      return PrintColorMode.fromJobString(widget.job.colorMode) == PrintColorMode.color;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +129,44 @@ class _PrinterSelectionScreenState extends State<PrinterSelectionScreen> {
                 Text('Color Mode: ${widget.job.colorMode}'),
                 Text('Paper Size: ${widget.job.paperSize}'),
                 Text('Print Side: ${widget.job.printSide}'),
+                if (widget.job.pageRange != null && widget.job.pageRange!.trim().isNotEmpty)
+                  Text('Page Range: ${widget.job.pageRange}'),
+                if (_isDuplexRequested &&
+                    provider.selectedPrinterCapabilities != null &&
+                    !provider.selectedPrinterCapabilities!.supportsDuplex)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning, color: Colors.orange, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Warning: Selected printer does not support two-sided (duplex) printing.',
+                            style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_isColorRequested &&
+                    provider.selectedPrinterCapabilities != null &&
+                    !provider.selectedPrinterCapabilities!.supportsColor)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning, color: Colors.orange, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Warning: Selected printer is monochrome and does not support color printing.',
+                            style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -125,12 +179,16 @@ class _PrinterSelectionScreenState extends State<PrinterSelectionScreen> {
                         return;
                       }
 
+                      final pageRangeInfo = widget.job.pageRange != null && widget.job.pageRange!.trim().isNotEmpty
+                          ? '\nPage Range: ${widget.job.pageRange}'
+                          : '';
+
                       showDialog(
                         context: context,
                         barrierDismissible: false,
                         builder: (context) => AlertDialog(
                           title: const Text('Ready to Print?'),
-                          content: Text('Are you sure you want to print ${widget.job.copies} copies to "${provider.selectedPrinter!.name}"?\n\nPaper Size: ${widget.job.paperSize}\nColor Mode: ${widget.job.colorMode}'),
+                          content: Text('Are you sure you want to print ${widget.job.copies} copies to "${provider.selectedPrinter!.name}"?\n\nPaper Size: ${widget.job.paperSize}\nColor Mode: ${widget.job.colorMode}$pageRangeInfo'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),

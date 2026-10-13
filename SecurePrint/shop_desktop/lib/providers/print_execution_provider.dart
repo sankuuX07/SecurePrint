@@ -4,7 +4,9 @@ import 'package:printing/printing.dart';
 import '../models/print_job_detail_model.dart';
 import '../services/shop_service.dart';
 import '../services/secure_storage.dart';
-import '../core/errors/api_exception.dart';
+import '../services/pdf_page_extractor.dart';
+import '../models/print_settings.dart';
+import '../services/printer_settings_service.dart';
 
 enum PrintExecutionState {
   idle,
@@ -18,6 +20,8 @@ enum PrintExecutionState {
 class PrintExecutionProvider extends ChangeNotifier {
   final ShopService _shopService;
   final SecureStorage _secureStorage;
+  final PdfPageExtractor _pageExtractor;
+  final PrinterSettingsService _printerSettingsService;
 
   PrintExecutionState _state = PrintExecutionState.idle;
   PrintExecutionState get state => _state;
@@ -33,8 +37,12 @@ class PrintExecutionProvider extends ChangeNotifier {
   PrintExecutionProvider({
     ShopService? shopService,
     SecureStorage? secureStorage,
+    PdfPageExtractor? pageExtractor,
+    PrinterSettingsService? printerSettingsService,
   }) : _shopService = shopService ?? ShopService(),
-       _secureStorage = secureStorage ?? SecureStorage();
+       _secureStorage = secureStorage ?? SecureStorage(),
+       _pageExtractor = pageExtractor ?? const PdfPageExtractor(),
+       _printerSettingsService = printerSettingsService ?? WindowsPrinterSettingsService();
 
   Future<void> executePrint(PrintJobDetailModel job, Printer printer, String localFilePath) async {
     if (_state == PrintExecutionState.starting || _state == PrintExecutionState.printing || _state == PrintExecutionState.syncing) {
@@ -80,15 +88,31 @@ class PrintExecutionProvider extends ChangeNotifier {
       
       final pdfBytes = await file.readAsBytes();
 
+      // 2.1 Validate and apply printer duplex and color settings
+      final duplexMode = PrintDuplexMode.fromJobString(job.printSide);
+      final colorMode = PrintColorMode.fromJobString(job.colorMode);
+
+      await _printerSettingsService.applySettings(
+        printer.name,
+        duplexMode: duplexMode,
+        colorMode: colorMode,
+      );
+
+      // 2.2 Extract requested page range.
+      // Rejects invalid, reversed, out-of-bounds, and empty ranges with clear error.
+      // Returns full document if no range is requested.
+      // Original file and original bytes are preserved.
+      final bytesToPrint = _pageExtractor.extractPages(pdfBytes, job.pageRange);
+
       for (int i = 0; i < job.copies; i++) {
         _currentCopy = i + 1;
         notifyListeners();
         
         await Printing.directPrintPdf(
           printer: printer,
-          onLayout: (_) => pdfBytes,
+          onLayout: (_) => bytesToPrint,
           name: 'SecurePrint_Job_${job.id}_Copy_$_currentCopy',
-          usePrinterSettings: false, 
+          usePrinterSettings: true, 
         );
       }
 
@@ -113,7 +137,7 @@ class PrintExecutionProvider extends ChangeNotifier {
     } catch (e) {
       // If completeJob fails, we stay in syncing/failed state but the local storage 
       // is still PRINTED_PENDING_SYNC, so next time it won't physically print.
-      throw e;
+      rethrow;
     }
   }
 

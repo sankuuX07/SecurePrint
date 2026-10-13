@@ -273,6 +273,8 @@ class _JobDetailsContent extends StatelessWidget {
                     _InfoRow('Print Side:', job.printSide),
                     if (job.selectedPageCount != null)
                       _InfoRow('Pages to Print:', job.selectedPageCount.toString()),
+                    if (job.pageRange != null && job.pageRange!.trim().isNotEmpty)
+                      _InfoRow('Page Range:', job.pageRange!),
                   ],
                 ),
               ),

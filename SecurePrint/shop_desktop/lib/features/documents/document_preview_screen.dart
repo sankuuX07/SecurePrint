@@ -86,6 +86,8 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
                   _buildDetailRow('Print Side', widget.job.printSide),
                   if (widget.job.selectedPageCount != null)
                     _buildDetailRow('Pages Selected', widget.job.selectedPageCount.toString()),
+                  if (widget.job.pageRange != null && widget.job.pageRange!.trim().isNotEmpty)
+                    _buildDetailRow('Page Range', widget.job.pageRange!),
                   const SizedBox(height: 24),
                   const Text('Status', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const Divider(),

@@ -39,6 +39,7 @@ class PrintJobDetailModel extends PrintJobModel {
     required super.printSide,
     super.createdAt,
     super.selectedPageCount,
+    super.pageRange,
     required super.documentId,
     required this.statusHistory,
   });
@@ -59,6 +60,7 @@ class PrintJobDetailModel extends PrintJobModel {
       printSide: json['print_side'] as String,
       createdAt: json['created_at'] as String?,
       selectedPageCount: json['selected_page_count'] as int?,
+      pageRange: json['page_range'] as String?,
       documentId: json['document_id'] as String,
       statusHistory: historyList,
     );

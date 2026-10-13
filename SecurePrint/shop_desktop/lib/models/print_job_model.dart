@@ -8,6 +8,7 @@ class PrintJobModel {
   final String printSide;
   final String? createdAt;
   final int? selectedPageCount;
+  final String? pageRange;
   final String documentId;
 
   PrintJobModel({
@@ -20,6 +21,7 @@ class PrintJobModel {
     required this.printSide,
     this.createdAt,
     this.selectedPageCount,
+    this.pageRange,
     required this.documentId,
   });
 
@@ -34,6 +36,7 @@ class PrintJobModel {
       printSide: json['print_side'] as String,
       createdAt: json['created_at'] as String?,
       selectedPageCount: json['selected_page_count'] as int?,
+      pageRange: json['page_range'] as String?,
       documentId: json['document_id'] as String,
     );
   }

@@ -47,4 +47,44 @@ void main() {
     expect(find.text('DOUBLE'), findsOneWidget); // Print Side
     expect(find.text('\$15.50'), findsOneWidget); // Price
   });
+
+  testWidgets('DocumentPreviewScreen displays pageRange when present', (WidgetTester tester) async {
+    final mockJob = PrintJobDetailModel(
+      id: 124,
+      status: 'ACCEPTED',
+      price: 6.00,
+      copies: 1,
+      paperSize: 'A4',
+      colorMode: 'BW',
+      printSide: 'SINGLE',
+      documentId: 'doc_2',
+      pageRange: '1-3, 5',
+      selectedPageCount: 4,
+      statusHistory: [],
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<DocumentAccessProvider>(
+            create: (_) => DocumentAccessProvider(documentAccessService: DocumentAccessService()),
+          ),
+        ],
+        child: MaterialApp(
+          home: DocumentPreviewScreen(
+            job: mockJob,
+            localFilePath: 'dummy_path.pdf',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Page Range'), findsOneWidget);
+    expect(find.text('1-3, 5'), findsOneWidget);
+    expect(find.text('Pages Selected'), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
+  });
 }
