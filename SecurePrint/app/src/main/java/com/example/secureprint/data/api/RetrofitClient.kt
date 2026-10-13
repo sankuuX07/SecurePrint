@@ -1,5 +1,6 @@
 package com.example.secureprint.data.api
 
+import com.example.secureprint.BuildConfig
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -25,13 +26,15 @@ object RetrofitClient {
         coerceInputValues = true
     }
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-            redactHeader("Authorization")
-        })
-        .addInterceptor(com.example.secureprint.data.auth.AuthInterceptor())
-        .build()
+    private val okHttpClient = OkHttpClient.Builder().apply {
+        if (BuildConfig.DEBUG) {
+            addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+                redactHeader("Authorization")
+            })
+        }
+        addInterceptor(com.example.secureprint.data.auth.AuthInterceptor())
+    }.build()
 
     private val retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
