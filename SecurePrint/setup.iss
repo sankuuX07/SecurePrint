@@ -1,17 +1,18 @@
 [Setup]
+AppId={{D37F8E21-9B5A-4B6E-A71C-84E37A2F0914}}
 AppName=SecurePrint Shop
 AppVersion=1.0.0
-DefaultDirName=C:\Users\sansk\SecurePrintShopInstall
+DefaultDirName={localappdata}\Programs\SecurePrint Shop
 DefaultGroupName=SecurePrint Shop
 UninstallDisplayIcon={app}\SecurePrint-Shop.exe
 Compression=lzma2
 SolidCompression=yes
-OutputDir=C:\Users\sansk\OneDrive\Desktop\SecurePrint\SecurePrint\installers
+OutputDir=installers
 OutputBaseFilename=SecurePrint-Shop-Setup
 PrivilegesRequired=lowest
 
 [Files]
-Source: "C:\Users\sansk\OneDrive\Desktop\SecurePrint\SecurePrint\shop_desktop\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "shop_desktop\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\SecurePrint Shop"; Filename: "{app}\SecurePrint-Shop.exe"
