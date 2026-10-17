@@ -1,7 +1,6 @@
 package com.example.secureprint.screens
 
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -26,9 +25,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.secureprint.data.model.DocumentResponse
 import com.example.secureprint.ui.customer.DocumentUiState
 import com.example.secureprint.ui.customer.DocumentViewModel
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,24 +41,23 @@ fun CustomerDashboardScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            val contentResolver = context.contentResolver
-            val fileName = contentResolver.query(it, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                cursor.moveToFirst()
-                cursor.getString(nameIndex)
-            } ?: "document"
-
-            val bytes = contentResolver.openInputStream(it)?.readBytes()
-            if (bytes != null) {
-                val requestFile = bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
-                val body = MultipartBody.Part.createFormData("file", fileName, requestFile)
-                viewModel.uploadDocument(body)
-            }
+            viewModel.uploadPdfFromUri(context.contentResolver, it)
         }
     }
 
     LaunchedEffect(Unit) {
         viewModel.loadDocuments()
+    }
+
+    if (viewModel.uploadError != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearUploadError() },
+            title = { Text("Upload Failed") },
+            text = { Text(viewModel.uploadError!!) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearUploadError() }) { Text("OK") }
+            }
+        )
     }
 
     if (viewModel.deleteError != null) {
@@ -109,7 +104,7 @@ fun CustomerDashboardScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { filePickerLauncher.launch("*/*") },
+                onClick = { filePickerLauncher.launch("application/pdf") },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Upload Document", tint = MaterialTheme.colorScheme.onPrimary)

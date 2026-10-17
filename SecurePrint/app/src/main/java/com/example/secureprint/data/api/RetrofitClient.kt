@@ -7,6 +7,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     // Set to true when testing on a physical device (USB adb reverse or LAN)
@@ -27,6 +28,9 @@ object RetrofitClient {
     }
 
     private val okHttpClient = OkHttpClient.Builder().apply {
+        connectTimeout(30, TimeUnit.SECONDS)
+        readTimeout(60, TimeUnit.SECONDS)
+        writeTimeout(60, TimeUnit.SECONDS)
         if (BuildConfig.DEBUG) {
             addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
