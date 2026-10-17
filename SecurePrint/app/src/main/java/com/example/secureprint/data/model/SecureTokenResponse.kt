@@ -1,5 +1,8 @@
 package com.example.secureprint.data.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class SecureTokenResponse(
     val token: String,
     val expires_at: String,
@@ -7,3 +10,4 @@ data class SecureTokenResponse(
     val document_id: String,
     val shop_id: Int
 )
+
