@@ -64,8 +64,15 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
+    final rememberSession = await _secureStorage.getRememberSession();
     final token = await _secureStorage.getToken();
-    if (token != null) {
+
+    // Guard: Prevent initialization from overwriting an in-progress or completed login
+    if (_state == AuthState.loggingIn || _state == AuthState.authenticated) {
+      return;
+    }
+
+    if (token != null && rememberSession) {
       final localDataStr = await _secureStorage.getLocalUserData();
       if (localDataStr != null) {
         try {
@@ -80,6 +87,11 @@ class AuthProvider extends ChangeNotifier {
       }
       _state = AuthState.authenticated;
     } else {
+      await _secureStorage.deleteToken();
+      await _secureStorage.deleteRememberSession();
+      await _secureStorage.deleteLocalUserData();
+      _isLocalSession = false;
+      _currentUser = null;
       _state = AuthState.unauthenticated;
     }
     notifyListeners();
@@ -93,6 +105,7 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     final trimmedEmail = email.trim();
     if (trimmedEmail.isEmpty || password.isEmpty) {
+      _state = AuthState.unauthenticated;
       _errorMessage = 'Please enter your email and password.';
       notifyListeners();
       return;
@@ -115,15 +128,13 @@ class AuthProvider extends ChangeNotifier {
       _isLocalSession = result.isLocal;
       _currentUser = result.user;
 
-      if (rememberSession) {
-        await _secureStorage.saveToken(result.token);
-        await _secureStorage.saveRememberSession(true);
-        if (result.isLocal && result.user != null) {
-          await _secureStorage.saveLocalUserData(jsonEncode(result.user!.toJson()));
-        }
+      // Always save token for the active session so ApiClient can authenticate requests.
+      await _secureStorage.saveToken(result.token);
+      await _secureStorage.saveRememberSession(rememberSession);
+
+      if (result.isLocal && result.user != null) {
+        await _secureStorage.saveLocalUserData(jsonEncode(result.user!.toJson()));
       } else {
-        await _secureStorage.deleteToken();
-        await _secureStorage.deleteRememberSession();
         await _secureStorage.deleteLocalUserData();
       }
 

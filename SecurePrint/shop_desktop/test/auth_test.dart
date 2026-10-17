@@ -3,14 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shop_desktop/core/config/app_config.dart';
+import 'package:shop_desktop/core/networking/api_client.dart';
 import 'package:shop_desktop/services/auth_service.dart';
 import 'package:shop_desktop/services/backend_auth_service.dart';
 import 'package:shop_desktop/services/local_auth_service.dart';
 import 'package:shop_desktop/services/secure_storage.dart';
+import 'package:shop_desktop/services/shop_service.dart';
 import 'package:shop_desktop/providers/auth_provider.dart';
+import 'package:shop_desktop/providers/dashboard_provider.dart';
 
 class MockSecureStorage extends SecureStorage {
   String? _token;
+  bool _rememberSession = false;
 
   @override
   Future<void> saveToken(String token) async {
@@ -25,6 +29,21 @@ class MockSecureStorage extends SecureStorage {
   @override
   Future<void> deleteToken() async {
     _token = null;
+  }
+
+  @override
+  Future<void> saveRememberSession(bool remember) async {
+    _rememberSession = remember;
+  }
+
+  @override
+  Future<bool> getRememberSession() async {
+    return _rememberSession;
+  }
+
+  @override
+  Future<void> deleteRememberSession() async {
+    _rememberSession = false;
   }
 }
 
@@ -196,12 +215,118 @@ void main() {
       expect(await mockStorage.getToken(), isNull);
     });
 
-    test('Existing authenticated session restoration', () async {
+    test('Existing authenticated session restoration when rememberSession is true', () async {
       await mockStorage.saveToken('existing_token');
+      await mockStorage.saveRememberSession(true);
       final provider = AuthProvider(secureStorage: mockStorage);
       // Wait a microtask for initialization to finish
       await Future.delayed(Duration.zero);
       expect(provider.state, AuthState.authenticated);
+      expect(await mockStorage.getToken(), 'existing_token');
+    });
+
+    test('Session is not restored on restart when rememberSession is false', () async {
+      await mockStorage.saveToken('existing_token');
+      await mockStorage.saveRememberSession(false);
+      final provider = AuthProvider(secureStorage: mockStorage);
+      await Future.delayed(Duration.zero);
+      expect(provider.state, AuthState.unauthenticated);
+      expect(await mockStorage.getToken(), isNull);
+    });
+
+    test('Login with rememberSession: false keeps token available for active session', () async {
+      final client = MockClient((request) async {
+        return http.Response(
+            jsonEncode({'access_token': 'active_token_123', 'role': 'SHOP'}), 200);
+      });
+      final authService = AuthService(client: client);
+      final provider = AuthProvider(authService: authService, secureStorage: mockStorage);
+
+      await provider.login('shop@test.com', 'password', rememberSession: false);
+
+      expect(provider.state, AuthState.authenticated);
+      expect(provider.isAuthenticated, isTrue);
+      // Token must be available for ApiClient during active session
+      expect(await mockStorage.getToken(), 'active_token_123');
+      expect(await mockStorage.getRememberSession(), isFalse);
+
+      // But upon app restart, session is not restored
+      final restartedProvider = AuthProvider(authService: authService, secureStorage: mockStorage);
+      await Future.delayed(Duration.zero);
+      expect(restartedProvider.state, AuthState.unauthenticated);
+      expect(await mockStorage.getToken(), isNull);
+    });
+
+    test('Login with rememberSession: true persists token and restores session on restart', () async {
+      final client = MockClient((request) async {
+        return http.Response(
+            jsonEncode({'access_token': 'persisted_token_456', 'role': 'SHOP'}), 200);
+      });
+      final authService = AuthService(client: client);
+      final provider = AuthProvider(authService: authService, secureStorage: mockStorage);
+
+      await provider.login('shop@test.com', 'password', rememberSession: true);
+
+      expect(provider.state, AuthState.authenticated);
+      expect(await mockStorage.getToken(), 'persisted_token_456');
+      expect(await mockStorage.getRememberSession(), isTrue);
+
+      // Upon app restart, session is restored
+      final restartedProvider = AuthProvider(authService: authService, secureStorage: mockStorage);
+      await Future.delayed(Duration.zero);
+      expect(restartedProvider.state, AuthState.authenticated);
+      expect(await mockStorage.getToken(), 'persisted_token_456');
+    });
+
+    test('Unchecked rememberSession allows ApiClient to authenticate /api/v1/users/me and load dashboard', () async {
+      final client = MockClient((request) async {
+        if (request.url.path.contains('/auth/login')) {
+          return http.Response(
+              jsonEncode({'access_token': 'bearer_jwt_token', 'role': 'SHOP'}), 200);
+        } else if (request.url.path.contains('/users/me')) {
+          // Verify that Authorization header is present with Bearer token!
+          final authHeader = request.headers['Authorization'];
+          if (authHeader == 'Bearer bearer_jwt_token') {
+            return http.Response(
+              jsonEncode({
+                'id': 10,
+                'name': 'Shop Owner',
+                'email': 'shop@test.com',
+                'phone': '1234567890',
+                'role': 'SHOP',
+                'shop_name': 'Approved Shop',
+                'address': '123 Main St',
+                'city': 'Metropolis',
+              }),
+              200,
+            );
+          } else {
+            return http.Response(jsonEncode({'detail': 'Not authenticated'}), 401);
+          }
+        } else if (request.url.path.contains('/print-jobs/shop')) {
+          return http.Response(jsonEncode([]), 200);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final authService = AuthService(client: client);
+      final authProvider = AuthProvider(authService: authService, secureStorage: mockStorage);
+
+      // User logs in with rememberSession == false (default UI state)
+      await authProvider.login('shop@test.com', 'password', rememberSession: false);
+      expect(authProvider.isAuthenticated, isTrue);
+
+      // ApiClient and DashboardProvider query /api/v1/users/me using the same storage
+      final apiClient = ApiClient(client: client, secureStorage: mockStorage);
+      final shopService = ShopService(apiClient: apiClient);
+      final dashboardProvider = DashboardProvider(shopService: shopService);
+
+      await dashboardProvider.loadDashboard();
+
+      // Dashboard must be loaded and NOT unauthorized (preventing login flickering)
+      expect(dashboardProvider.state, DashboardState.loaded);
+      expect(dashboardProvider.shopProfile?.shopName, 'Approved Shop');
+      expect(dashboardProvider.errorMessage, isNull);
     });
   });
 }

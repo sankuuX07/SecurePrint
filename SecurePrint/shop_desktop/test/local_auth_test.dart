@@ -290,7 +290,17 @@ void main() {
       expect(provider.currentUser?.shopName, 'Dave Printing Hub');
       expect(await mockStorage.getRememberedEmail(), 'dave@shop.local');
 
-      // Since rememberSession was false, token was NOT saved to storage
+      // Active session: token IS available in storage for ApiClient
+      expect(await mockStorage.getToken(), isNotNull);
+      expect(await mockStorage.getRememberSession(), isFalse);
+
+      // Simulated app restart with rememberSession == false does not restore session
+      final restartedProvider = AuthProvider(
+        localAuthService: localAuthService,
+        secureStorage: mockStorage,
+      );
+      await Future.delayed(Duration.zero);
+      expect(restartedProvider.isAuthenticated, isFalse);
       expect(await mockStorage.getToken(), isNull);
     });
 
