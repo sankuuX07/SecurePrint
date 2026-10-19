@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.secureprint.data.api.NetworkErrorParser
 import com.example.secureprint.data.model.AuthResponse
 import com.example.secureprint.data.repository.AuthRepository
 import kotlinx.coroutines.launch
@@ -27,19 +28,16 @@ class LoginViewModel(
         viewModelScope.launch {
             uiState = LoginUiState.Loading
             try {
-                val response = repository.login(email, password)
+                val response = repository.login(email.trim(), password)
                 if (response.isSuccessful && response.body() != null) {
                     uiState = LoginUiState.Success(response.body()!!)
                 } else {
-                    val errorMsg = when (response.code()) {
-                        400 -> "Incorrect email or password"
-                        403 -> "Account pending approval or inactive"
-                        else -> "Login failed: ${response.message()}"
-                    }
+                    val errorMsg = NetworkErrorParser.parseError(response, "Login failed")
                     uiState = LoginUiState.Error(errorMsg)
                 }
             } catch (e: Exception) {
-                uiState = LoginUiState.Error("An error occurred: ${e.localizedMessage}")
+                val errorMsg = NetworkErrorParser.parseException(e)
+                uiState = LoginUiState.Error(errorMsg)
             }
         }
     }

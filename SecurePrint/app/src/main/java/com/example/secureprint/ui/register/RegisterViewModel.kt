@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.secureprint.data.api.NetworkErrorParser
 import com.example.secureprint.data.model.RegisterRequest
 import com.example.secureprint.data.model.UserResponse
 import com.example.secureprint.data.repository.AuthRepository
@@ -32,12 +33,18 @@ class RegisterViewModel(
                 if (response.isSuccessful && response.body() != null) {
                     uiState = RegisterUiState.Success(response.body()!!)
                 } else {
-                    uiState = RegisterUiState.Error("Registration failed: ${response.message()}")
+                    val errorMessage = NetworkErrorParser.parseError(response, "Registration failed")
+                    uiState = RegisterUiState.Error(errorMessage)
                 }
             } catch (e: Exception) {
-                uiState = RegisterUiState.Error("An error occurred: ${e.localizedMessage}")
+                val errorMessage = NetworkErrorParser.parseException(e)
+                uiState = RegisterUiState.Error(errorMessage)
             }
         }
+    }
+
+    fun setError(message: String) {
+        uiState = RegisterUiState.Error(message)
     }
 
     fun resetState() {

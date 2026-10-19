@@ -112,8 +112,18 @@ fun CustomerRegisterScreen(
 
         Button(
             onClick = {
-                if (password == confirmPassword) {
-                    viewModel.register(RegisterRequest(name, email, phone, password, "CUSTOMER"))
+                if (password != confirmPassword) {
+                    viewModel.setError("Passwords do not match.")
+                } else {
+                    viewModel.register(
+                        RegisterRequest(
+                            name = name.trim(),
+                            email = email.trim(),
+                            phone = phone.trim(),
+                            password = password,
+                            role = "CUSTOMER"
+                        )
+                    )
                 }
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -133,6 +143,8 @@ fun CustomerRegisterScreen(
         TextButton(onClick = onBackToLogin) {
             Text("Already have an account? Login")
         }
+
+        ApiTargetBadge()
     }
 }
 
@@ -321,5 +333,7 @@ fun ShopRegisterScreen(
         TextButton(onClick = onBackToLogin) {
             Text("Back to Login")
         }
+
+        ApiTargetBadge()
     }
 }

@@ -138,5 +138,98 @@ fun LoginBaseScreen(
                 Text("Don't have an account? Register")
             }
         }
+
+        ApiTargetBadge()
     }
 }
+
+@Composable
+fun ApiTargetBadge() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var showDialog by remember { mutableStateOf(false) }
+    var currentEnv by remember { mutableStateOf(com.example.secureprint.data.api.ApiConfig.currentEnvironment) }
+    var currentUrl by remember { mutableStateOf(com.example.secureprint.data.api.ApiConfig.baseUrl) }
+
+    Surface(
+        onClick = { showDialog = true },
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+        modifier = Modifier.padding(top = 16.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Target: ${if (currentEnv == com.example.secureprint.data.api.ApiConfig.TargetEnvironment.PHYSICAL_DEVICE) "Physical (127.0.0.1:8000)" else "Emulator (10.0.2.2:8000)"}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = "⚙️", style = MaterialTheme.typography.labelSmall)
+        }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("API Target Configuration") },
+            text = {
+                Column {
+                    Text(
+                        text = "Active Base URL:\n$currentUrl",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Select test environment:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            com.example.secureprint.data.api.ApiConfig.setEnvironment(
+                                context,
+                                com.example.secureprint.data.api.ApiConfig.TargetEnvironment.PHYSICAL_DEVICE
+                            )
+                            currentEnv = com.example.secureprint.data.api.ApiConfig.currentEnvironment
+                            currentUrl = com.example.secureprint.data.api.ApiConfig.baseUrl
+                            showDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = if (currentEnv == com.example.secureprint.data.api.ApiConfig.TargetEnvironment.PHYSICAL_DEVICE)
+                            ButtonDefaults.buttonColors()
+                        else
+                            ButtonDefaults.outlinedButtonColors()
+                    ) {
+                        Text("Physical Phone via USB (127.0.0.1:8000)")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            com.example.secureprint.data.api.ApiConfig.setEnvironment(
+                                context,
+                                com.example.secureprint.data.api.ApiConfig.TargetEnvironment.EMULATOR
+                            )
+                            currentEnv = com.example.secureprint.data.api.ApiConfig.currentEnvironment
+                            currentUrl = com.example.secureprint.data.api.ApiConfig.baseUrl
+                            showDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = if (currentEnv == com.example.secureprint.data.api.ApiConfig.TargetEnvironment.EMULATOR)
+                            ButtonDefaults.buttonColors()
+                        else
+                            ButtonDefaults.outlinedButtonColors()
+                    ) {
+                        Text("Android Emulator (10.0.2.2:8000)")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) { Text("Close") }
+            }
+        )
+    }
+}
+

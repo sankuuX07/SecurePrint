@@ -64,6 +64,12 @@ class DocumentViewModel(
     }
 
     fun loadDocuments() {
+        val token = com.example.secureprint.data.auth.SessionManager.getToken()
+        if (token.isNullOrBlank()) {
+            uiState = DocumentUiState.Error("Authentication token is missing. Please log in.")
+            return
+        }
+
         viewModelScope.launch {
             uiState = DocumentUiState.Loading
             uiState = try {
@@ -71,10 +77,12 @@ class DocumentViewModel(
                 if (response.isSuccessful && response.body() != null) {
                     DocumentUiState.Success(response.body()!!)
                 } else {
-                    DocumentUiState.Error("Failed to load documents: ${response.message()}")
+                    val errorMessage = com.example.secureprint.data.api.NetworkErrorParser.parseError(response, "Failed to load documents")
+                    DocumentUiState.Error(errorMessage)
                 }
             } catch (e: Exception) {
-                DocumentUiState.Error("An error occurred: ${e.localizedMessage}")
+                val errorMessage = com.example.secureprint.data.api.NetworkErrorParser.parseException(e)
+                DocumentUiState.Error(errorMessage)
             }
         }
     }
@@ -199,6 +207,12 @@ class DocumentViewModel(
     }
 
     fun uploadDocument(filePart: MultipartBody.Part) {
+        val token = com.example.secureprint.data.auth.SessionManager.getToken()
+        if (token.isNullOrBlank()) {
+            uploadError = "Authentication token is missing. Please log in."
+            return
+        }
+
         viewModelScope.launch {
             uiState = DocumentUiState.Loading
             try {
@@ -206,38 +220,37 @@ class DocumentViewModel(
                 if (response.isSuccessful) {
                     loadDocuments()
                 } else {
-                    val rawError = response.errorBody()?.string()
-                    val errorMessage = if (!rawError.isNullOrBlank()) {
-                        try {
-                            val detailRegex = """"detail"\s*:\s*"([^"]+)"""".toRegex()
-                            detailRegex.find(rawError)?.groupValues?.get(1) ?: rawError
-                        } catch (_: Exception) {
-                            rawError
-                        }
-                    } else {
-                        response.message().ifBlank { "HTTP ${response.code()}" }
-                    }
+                    val errorMessage = com.example.secureprint.data.api.NetworkErrorParser.parseError(response, "Upload failed")
                     uploadError = "Upload failed: $errorMessage"
                     loadDocuments()
                 }
             } catch (e: Exception) {
-                uploadError = "An error occurred: ${e.localizedMessage}"
+                val errorMessage = com.example.secureprint.data.api.NetworkErrorParser.parseException(e)
+                uploadError = errorMessage
                 loadDocuments()
             }
         }
     }
     
     fun deleteDocument(id: String) {
+        val token = com.example.secureprint.data.auth.SessionManager.getToken()
+        if (token.isNullOrBlank()) {
+            deleteError = "Authentication token is missing. Please log in."
+            return
+        }
+
         viewModelScope.launch {
             try {
                 val response = repository.deleteDocument(id)
                 if (response.isSuccessful) {
                     loadDocuments()
                 } else {
-                    deleteError = "Failed to delete: ${response.message()}"
+                    val errorMessage = com.example.secureprint.data.api.NetworkErrorParser.parseError(response, "Failed to delete")
+                    deleteError = errorMessage
                 }
             } catch (e: Exception) {
-                deleteError = "An error occurred: ${e.localizedMessage}"
+                val errorMessage = com.example.secureprint.data.api.NetworkErrorParser.parseException(e)
+                deleteError = errorMessage
             }
         }
     }

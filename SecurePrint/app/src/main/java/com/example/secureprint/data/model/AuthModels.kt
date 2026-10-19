@@ -50,5 +50,7 @@ data class UserResponse(
     val status: String,
     val shop_name: String? = null,
     val address: String? = null,
-    val city: String? = null
+    val city: String? = null,
+    val created_at: String? = null,
+    val updated_at: String? = null
 )
